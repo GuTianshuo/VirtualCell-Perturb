@@ -1,0 +1,16 @@
+pearson_all                    0.544
+pearson_de20                   0.817
+mse_de20                       0.012
+mse_all                        0.008
+pearson_sys                    0.526
+dir_acc_de20                   0.806
+dir_acc_de100                  0.825
+de_overlap20                   0.270
+rank                           0.038
+pearson_all_spearman_brown     0.704
+pearson_all_pred_ceiling       0.813
+pearson_de20_spearman_brown    0.899
+pearson_de20_pred_ceiling      0.900
+pearson_sys_spearman_brown     0.689
+pearson_sys_pred_ceiling       0.808
+dtype: float64

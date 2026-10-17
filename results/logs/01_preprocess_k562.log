@@ -1,0 +1,7 @@
+[replogle_k562_essential] 162751 cells x 5000 genes
+  perturbations kept: 1092 (min_cells=15); control cells: 10691
+  pseudobulk done (11s)
+  PCA(100) explained variance: 0.155
+  saved to /workspace/hot/生物医学信息--cs-1783f371/VirtualCell-Perturb/data/processed (30s total)
+  #DEG (FDR<0.05) per perturbation: median 283, mean 616, max 3045
+  target gene measured for 412 perts; median target log-FC -0.577

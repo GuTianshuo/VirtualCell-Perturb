@@ -1,0 +1,7 @@
+[adamson] 68603 cells x 5060 genes
+  perturbations kept: 86 (min_cells=15); control cells: 24263
+  pseudobulk done (2s)
+  PCA(100) explained variance: 0.279
+  saved to /workspace/hot/生物医学信息--cs-1783f371/VirtualCell-Perturb/data/processed (6s total)
+  #DEG (FDR<0.05) per perturbation: median 2375, mean 2456, max 3518
+  target gene measured for 86 perts; median target log-FC -0.470

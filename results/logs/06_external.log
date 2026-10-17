@@ -1,0 +1,13 @@
+shared genes 1910; Replogle training perts 1051 (Adamson genes removed)
+                               n_perts  ...  pearson_sys_overlap41
+model                                   ...                       
+Mean-shift                          86  ...                  0.000
+Linear-concat                       86  ...                  0.219
+kNN-concat                          86  ...                  0.259
+PerturbFormer                       86  ...                  0.247
+Linear-concat+KD                    86  ...                  0.234
+kNN-concat+KD                       86  ...                  0.277
+PerturbFormer+KD                    86  ...                  0.265
+Replogle-measured (same gene)       41  ...                    NaN
+
+[8 rows x 8 columns]

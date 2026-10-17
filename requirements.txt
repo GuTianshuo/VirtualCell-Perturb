@@ -1,0 +1,13 @@
+anndata==0.13.4
+h5py==3.16.0
+matplotlib==3.11.2
+numpy==2.5.4
+pandas==3.0.6
+python-pptx==1.0.2
+scanpy==1.12.4
+scikit-learn==1.9.1
+scipy==1.18.1
+seaborn==0.13.2
+statsmodels==0.15.0
+tabulate==0.10.0
+torch>=2.2  # CPU build is enough: pip install torch --index-url https://download.pytorch.org/whl/cpu

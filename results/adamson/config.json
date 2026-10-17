@@ -1,0 +1,10 @@
+{
+  "dataset": "adamson",
+  "folds": 5,
+  "seed": 0,
+  "models": "all",
+  "n_ens": 3,
+  "epochs": 300,
+  "tag": "",
+  "dev": false
+}

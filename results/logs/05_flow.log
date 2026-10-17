@@ -1,0 +1,52 @@
+[fold 0] PerturbFormer done (122s)
+    flow step 2000/8000  loss 1.1899
+    flow step 4000/8000  loss 1.1321
+    flow step 6000/8000  loss 1.0994
+    flow step 8000/8000  loss 1.0851
+[fold 0] flow trained (495s)
+[fold 0] evaluated 219 unseen perturbations (569s)
+[fold 1] PerturbFormer done (636s)
+    flow step 2000/8000  loss 1.2039
+    flow step 4000/8000  loss 1.1490
+    flow step 6000/8000  loss 1.1100
+    flow step 8000/8000  loss 1.0937
+[fold 1] flow trained (973s)
+[fold 1] evaluated 219 unseen perturbations (1048s)
+[fold 2] PerturbFormer done (1162s)
+    flow step 2000/8000  loss 1.1750
+    flow step 4000/8000  loss 1.1187
+    flow step 6000/8000  loss 1.0869
+    flow step 8000/8000  loss 1.0732
+[fold 2] flow trained (1494s)
+[fold 2] evaluated 218 unseen perturbations (1567s)
+[fold 3] PerturbFormer done (1635s)
+    flow step 2000/8000  loss 1.2016
+    flow step 4000/8000  loss 1.1511
+    flow step 6000/8000  loss 1.1071
+    flow step 8000/8000  loss 1.0930
+[fold 3] flow trained (1969s)
+[fold 3] evaluated 218 unseen perturbations (2045s)
+[fold 4] PerturbFormer done (2109s)
+    flow step 2000/8000  loss 1.2135
+    flow step 4000/8000  loss 1.1571
+    flow step 6000/8000  loss 1.1133
+    flow step 8000/8000  loss 1.0988
+[fold 4] flow trained (2443s)
+[fold 4] evaluated 218 unseen perturbations (2516s)
+                    energy_distance          ... logvar_err_top20pc        
+                               mean  median  ...               mean  median
+model                                        ...                           
+CFM (ours)                   1.0199  0.7078  ...             0.2148  0.1998
+Mean-shift                   1.7716  1.2704  ...             0.2635  0.2312
+No-change                    2.0980  1.4771  ...             0.2635  0.2312
+Oracle-shift                 0.2369  0.1761  ...             0.2635  0.2312
+PerturbFormer-shift          1.1108  0.8488  ...             0.2635  0.2312
+
+[5 rows x 6 columns]
+                     pearson_all  pearson_de20  ...  de_overlap20   rank
+model                                           ...                     
+PerturbFormer-shift        0.568         0.744  ...         0.280  0.188
+CFM (ours)                 0.557         0.738  ...         0.281  0.192
+
+[2 rows x 9 columns]
+total 2517s

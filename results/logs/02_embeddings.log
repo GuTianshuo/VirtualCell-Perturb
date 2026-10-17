@@ -1,0 +1,10 @@
+datasets: ['adamson', 'replogle_k562_essential']; 1137 perturbed genes
+  universe: 1137 perturbed + 20312 extra genes
+  GO  coverage 0.996 (universe 0.880)
+  PPI coverage 0.976 (universe 0.755)
+  GenePT: 93800 genes from GenePT_gene_embedding_ada_text.pickle
+  GenePT coverage 0.995 (universe 0.912)
+  check go: max |diff| vs existing = 0.00e+00
+  check ppi: max |diff| vs existing = 0.00e+00
+  check genept: max |diff| vs existing = 0.00e+00
+saved /workspace/hot/生物医学信息--cs-1783f371/VirtualCell-Perturb/data/processed/pert_embeddings.npz and gene_universe_embeddings.npz

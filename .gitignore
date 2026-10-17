@@ -1,0 +1,12 @@
+# data & large artefacts (re-created by scripts/00_download_data.sh and the pipeline)
+data/raw/
+data/processed/
+models/
+results/**/*.npz
+results/**/*.pt
+results/predictions/
+*.h5ad
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store

@@ -1,0 +1,47 @@
+[replogle_k562_essential] P=1092 G=5000 sources=['go', 'ppi', 'genept']
+  fold 0 done (747s)
+  fold 1 done (1470s)
+  fold 2 done (3034s)
+  fold 3 done (3974s)
+  fold 4 done (5038s)
+                            pearson_all  pearson_de20  ...  de_overlap20   rank
+model                                                  ...                     
+kNN-concat+KD                     0.567         0.749  ...         0.278  0.175
+Ablation-no-resp+KD               0.573         0.748  ...         0.283  0.177
+Ablation-no-dirloss+KD            0.570         0.746  ...         0.284  0.175
+Ablation-no-topk+KD               0.572         0.746  ...         0.282  0.178
+PerturbFormer+KD                  0.573         0.746  ...         0.285  0.174
+Ablation-concat-fusion+KD         0.572         0.744  ...         0.281  0.179
+Ablation-no-genept+KD             0.563         0.741  ...         0.271  0.192
+Ablation-no-ppi+KD                0.568         0.740  ...         0.277  0.179
+PerturbNet-attn+KD                0.552         0.738  ...         0.262  0.191
+Ablation-no-go+KD                 0.562         0.737  ...         0.259  0.198
+Ablation-free-attention+KD        0.563         0.730  ...         0.266  0.199
+PerturbNet-concat+KD              0.515         0.725  ...         0.242  0.197
+Linear-concat+KD                  0.526         0.696  ...         0.237  0.222
+Ablation-no-resp                  0.565         0.677  ...         0.270  0.191
+Ablation-no-dirloss               0.562         0.675  ...         0.271  0.188
+kNN-concat                        0.559         0.674  ...         0.264  0.190
+PerturbFormer                     0.565         0.674  ...         0.272  0.188
+Ablation-no-topk                  0.564         0.674  ...         0.269  0.192
+Ablation-concat-fusion            0.564         0.673  ...         0.267  0.194
+Ablation-no-genept                0.555         0.668  ...         0.256  0.207
+Ablation-no-ppi                   0.560         0.666  ...         0.264  0.193
+Ablation-no-go                    0.553         0.665  ...         0.245  0.213
+PerturbNet-attn                   0.543         0.663  ...         0.249  0.205
+Ablation-free-attention           0.555         0.655  ...         0.253  0.212
+PerturbNet-concat                 0.507         0.648  ...         0.230  0.211
+kNN-ppi                           0.526         0.646  ...         0.228  0.241
+kNN-go                            0.531         0.637  ...         0.255  0.209
+Linear-concat                     0.518         0.623  ...         0.223  0.237
+Linear-go                         0.522         0.611  ...         0.215  0.266
+kNN-genept                        0.484         0.588  ...         0.230  0.251
+Linear-ppi                        0.490         0.572  ...         0.170  0.371
+Linear-genept                     0.471         0.554  ...         0.181  0.323
+Linear-resp                       0.396         0.475  ...         0.108  0.462
+Mean-shift                        0.382         0.464  ...         0.091  0.500
+kNN-resp                          0.390         0.458  ...         0.111  0.455
+No-change                         0.000         0.000  ...         0.013  0.500
+
+[36 rows x 8 columns]
+total 5059s
