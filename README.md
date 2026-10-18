@@ -22,26 +22,52 @@
 | *测量噪声决定的可达上限* | 0.813 | 0.900 | 0.808 | — | — |
 
 - 均值平移的全基因相关看似不差，但**去偏 Pearson 为 0**：它不含任何扰动特异信息。
-- PerturbFormer 在全部 7 项指标上显著优于线性基线（配对 Wilcoxon p < 1e-21）；相对多源 kNN 小幅但显著领先（6 项中 4 优、1 平、1 劣）。核心收益来自**多源知识检索**这一思路。
+- PerturbFormer 在全部 7 项指标上显著优于线性基线（配对 Wilcoxon p < 1e-21）；相对多源 kNN 小幅但稳定领先：换 3 种随机划分重复，18 次配对比较中 15 次显著领先、1 次落后。核心收益来自**多源知识检索**这一思路。
 - 消融：去掉 GO（−0.029）、GenePT 语言模型嵌入（−0.024）、知识核注意力（−0.021）、STRING PPI（−0.020）都会显著下降；CRISPRi 敲低规则使 Top-20 DEG 相关提升 0.072。
-- **单细胞（条件流匹配）**：相对只平移均值，能量距离 −8%、方差误差 −19%（p < 1e-38）；能复现敲低后的细胞异质性。
+- **DEG 方向**：全部约 67 万个显著 DEG 上方向准确率 87.8%（AUROC 0.946），变化幅度 > 0.2 的 DEG 达 93% 以上；错误集中在接近噪声的弱变化基因。
+- **单细胞（条件流匹配）**：相对只平移均值，能量距离 −7%、MMD −17%、方差误差 −17%（p < 1e-31）；能复现敲低后的细胞异质性。潜空间每折只用训练细胞拟合。
 - **第二个数据集**（Adamson 2016，86 个扰动，同样的未见基因评测）：PerturbFormer 在所有指标上最优，去偏 Pearson 0.544（kNN 0.498，线性 0.476）。
 - **跨实验室外部验证**（Replogle → Adamson，全部为未见基因）：达到"直接重测同一基因"上限的 79–86%。
 - **生物学解释**：预测保留 CORUM 复合体与 Hallmark 通路结构（通路相关 r = 0.59）；核糖体、蛋白酶体、Mediator 等复合体成员最可预测；GATA1 这类谱系特异的主调控因子是明确的失败边界。
 
 | | |
 |---|---|
-| ![benchmark](figures/fig2_benchmark.png) | ![flow](figures/fig7_flow.png) |
-| ![cases](figures/fig_interp_G_cases.png) | ![external](figures/fig8_external.png) |
+| ![benchmark](figures/fig2_benchmark.png) | ![representation](figures/fig_repr.png) |
+| ![cases](figures/fig_interp_G_cases.png) | ![flow](figures/fig7_flow.png) |
 
 完整报告：[`docs/report.md`](docs/report.md) · 汇报 PPT：`docs/VirtualCell-Perturb_汇报.pptx` · 交互式浏览器：`docs/explorer.html`（浏览器直接打开）
+
+## 课程要求对照
+
+| 课程 / 选题要求 | 本项目中的对应内容 |
+|---|---|
+| Problem 问题 | 未见基因敲低的转录响应预测；系统偏差陷阱与测量噪声（报告第 1 节） |
+| Data 数据 | 两个公开 CRISPRi Perturb-seq 数据集 + GO / STRING / GenePT 先验（第 2 节，`scripts/00–02`） |
+| control / perturbed 细胞表征 | 单细胞 PCA 潜空间、扰动应答谱、潜空间对未见扰动的覆盖（2.1 节，`scripts/11_representation.py`） |
+| 扰动编码 | 四种知识 token：GO、PPI、GenePT、应答谱（3.1 节，`src/vcp/embeddings.py`） |
+| 表达变化预测 | 基础版：Linear / kNN / PerturbNet；本文 PerturbFormer（3.2–3.3 节，`src/vcp/models.py`） |
+| DEG 方向预测 | 方向损失 + Top-20 / 全部 DEG 方向准确率分层分析（5.7 节） |
+| 高级版本：生成模型 / flow / Transformer | 条件流匹配（OT-CFM）生成单细胞；PerturbFormer 本身是 Transformer（3.4 节，`src/vcp/flow.py`） |
+| 最终成果：输入"细胞 + 基因"，输出扰动后状态 | `scripts/predict.py`、`VirtualCell.predict()`（第 7 节） |
+| Benchmark 评测 | 5 折未见基因 CV × 3 种划分、噪声上限、配对检验、消融、外部实验室验证（第 4–5 节） |
+| Biological interpretation 解释 | 复合体、通路、案例、知识源权重、失败模式（第 6 节） |
+| GitHub 代码 + 10 分钟汇报 | 本仓库；`docs/VirtualCell-Perturb_汇报.pptx`（16 页，讲稿约 9 分钟） |
+
+## 测试
+
+```bash
+pytest -q tests
+```
+
+11 个不依赖数据的单元测试：统计函数与 scipy / statsmodels 对照、交叉验证划分不重叠、两项防泄露检查。推送到 GitHub 后由 `.github/workflows/tests.yml` 自动运行。
 
 
 ## 项目结构
 
 ```
 VirtualCell-Perturb/
-├── run_all.sh                    # 一键复现全部结果（CPU，4 核约 2.5 小时）
+├── run_all.sh                    # 一键复现全部结果（CPU，4 核约 4 小时）
+├── tests/                        # 单元测试（无需数据）
 ├── requirements.txt
 ├── src/vcp/                      # Python 包
 │   ├── data.py                   # Perturb-seq 读取、分块伪批量统计、Welch t / BH-FDR、划分
@@ -60,6 +86,7 @@ VirtualCell-Perturb/
 │   ├── 02_build_embeddings.py    # 先验知识嵌入（扰动基因 + 全基因组约 2.1 万基因）
 │   ├── 03_benchmark.py           # 5 折未见扰动评测（全部模型 + 消融）
 │   ├── 03b_dev_sweep.py          # 仅在开发集上的超参数扫描
+│   ├── 03c_split_robustness.py   # 3 种随机划分下的稳健性汇总
 │   ├── 04_noise_ceiling.py       # 细胞拆半噪声天花板
 │   ├── 05_flow.py                # 条件流匹配训练与单细胞评测
 │   ├── 06_external_validation.py # Replogle → Adamson 跨实验室验证
@@ -67,6 +94,7 @@ VirtualCell-Perturb/
 │   ├── 08_train_final.py         # 用全部扰动训练可部署模型
 │   ├── 09_figures.py             # 评测图表与统计检验
 │   ├── 10_export_explorer.py     # 交互式网页
+│   ├── 11_representation.py      # 细胞与扰动的表征分析
 │   └── predict.py                # 命令行：细胞 + 基因 → 扰动后状态
 ├── results/                      # 指标表（csv / md）
 ├── figures/                      # 全部图
@@ -89,6 +117,8 @@ python scripts/predict.py --gene GATA1                         # 300 个 K562 �
 python scripts/predict.py --gene MED12 --cells my_cells.h5ad   # 自己的细胞（log 归一化表达）
 python scripts/predict.py --gene TP53                          # 筛选中从未扰动过的任意基因
 ```
+
+每次预测都会给出**可靠性评级**（高 / 中 / 低）：依据查询基因与已测扰动的先验相似度，按交叉验证结果校准（三档平均去偏 Pearson 0.32 / 0.47 / 0.65）。
 
 ```python
 from vcp.predictor import VirtualCell

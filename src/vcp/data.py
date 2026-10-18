@@ -174,3 +174,50 @@ def train_val_split(train_idx: np.ndarray, val_frac: float = 0.1, seed: int = 0)
 def ensure_dir(path: str) -> str:
     os.makedirs(path, exist_ok=True)
     return path
+
+
+# ----------------------------------------------------------------------------------------
+# single-cell latent space (PCA)
+# ----------------------------------------------------------------------------------------
+def cell_labels(obs_condition, perts) -> np.ndarray:
+    """Integer label per cell: index into `perts`, len(perts) for control, -1 for anything else."""
+    cond = np.asarray([parse_condition(c) for c in np.asarray(obs_condition).astype(str)])
+    lut = {p: i for i, p in enumerate(perts)}
+    ctrl = len(perts)
+    return np.array([lut.get(c, ctrl if c == CTRL else -1) for c in cond], dtype=np.int64)
+
+
+def fit_cell_pca(X, labels: np.ndarray, fit_labels, ctrl_label: int, ctrl_mean: np.ndarray,
+                 n_pcs: int = 100, per_pert: int = 40, n_ctrl: int = 5000, seed: int = 0,
+                 chunk: int = 20000):
+    """PCA of single cells (centred on the control mean), fitted ONLY on control cells and on
+    cells of the perturbations in `fit_labels` - pass the training perturbations of a CV fold so
+    that held-out perturbations never shape the latent space."""
+    from sklearn.decomposition import PCA
+
+    rng = np.random.default_rng(seed)
+    chosen = []
+    for k in list(fit_labels) + [ctrl_label]:
+        idx = np.nonzero(labels == k)[0]
+        m = n_ctrl if k == ctrl_label else per_pert
+        chosen.append(rng.choice(idx, size=min(m, len(idx)), replace=False))
+    chosen = np.sort(np.concatenate(chosen))
+    rows = []
+    for start in range(0, X.shape[0], chunk):
+        end = min(start + chunk, X.shape[0])
+        sel = chosen[(chosen >= start) & (chosen < end)] - start
+        if len(sel):
+            rows.append(sp.csr_matrix(X[start:end])[sel].toarray())
+    Xs = np.vstack(rows).astype(np.float32) - ctrl_mean[None]
+    pca = PCA(n_components=n_pcs, svd_solver="randomized", random_state=seed).fit(Xs)
+    return pca.components_.astype(np.float32), pca.explained_variance_ratio_.astype(np.float32)
+
+
+def project_cells(X, comps: np.ndarray, ctrl_mean: np.ndarray, chunk: int = 20000) -> np.ndarray:
+    """Latent coordinates (X - ctrl_mean) @ comps.T for every row of a (backed) sparse matrix."""
+    Z = np.zeros((X.shape[0], comps.shape[0]), dtype=np.float32)
+    offset = (ctrl_mean[None] @ comps.T).astype(np.float32)
+    for start in range(0, X.shape[0], chunk):
+        end = min(start + chunk, X.shape[0])
+        Z[start:end] = np.asarray(sp.csr_matrix(X[start:end]) @ comps.T) - offset
+    return Z

@@ -3,6 +3,7 @@
 All numbers on the slides are read from results/ so the deck stays in sync with the code.
     python docs/build_slides.py
 """
+import json
 import os
 import sys
 
@@ -181,8 +182,14 @@ def stat(slide, x, y, w, value, label, color=BLUE, vsize=34, lsize=12, h=1.2):
     text(slide, x, y + 0.66, w, h - 0.6, [label], size=lsize, color=TEXT2, line=1.05)
 
 
+TALK = []
+
+
 def notes(slide, s):
-    slide.notes_slide.notes_text_frame.text = s
+    """Speaker notes; the time label is estimated from length (~4.5 spoken characters per second)."""
+    sec = max(15, int(round(len(s.replace(" ", "")) / 4.5 / 5.0)) * 5)
+    TALK.append(sec)
+    slide.notes_slide.notes_text_frame.text = f"（约 {sec} 秒）" + s
 
 
 def bg(slide, color):
@@ -208,6 +215,11 @@ def load():
     R["pw"] = pd.read_csv(os.path.join(I, "pathway_consistency_summary.csv"))
     R["cls"] = pd.read_csv(os.path.join(I, "class_performance.csv"))
     R["fail"] = pd.read_csv(os.path.join(I, "failure_analysis.csv"))
+    R["dirn"] = pd.read_csv(os.path.join(I, "deg_direction.csv"), index_col=0)
+    import json
+    R["repr"] = json.load(open(os.path.join(I, "representation.json")))
+    p = os.path.join(RES, "split_robustness.csv")
+    R["splits"] = pd.read_csv(p) if os.path.exists(p) else None
     return R
 
 
@@ -245,7 +257,7 @@ def build():
                                      ("条件流匹配", {"bold": True, "color": "7FB2F0"}),
                                      (" 单细胞生成", {})]], size=16, color="D6E2EC")
     text(s, 0.75, 5.9, 6.6, 0.8, ["吉林大学人工智能学院　|　汇报人：__________"], size=14, color="9FB7CC")
-    notes(s, "（约 30 秒）各位老师同学好。我的选题是第九题：虚拟细胞扰动预测。核心问题只有一句话：如果敲低一个从来没有做过实验的基因，细胞的转录组会发生什么变化？我做了两个层次的模型：一个检索增强的 Transformer 预测平均表达变化，一个条件流匹配生成模型预测每个细胞的变化。下面按 Problem、Data、Model、Benchmark、Biological interpretation 五个环节汇报。")
+    notes(s, "各位老师好，我的选题是第九题，虚拟细胞扰动预测。核心问题是：敲低一个从没做过实验的基因，细胞会怎样变化。下面按问题、数据、模型、评测、生物学解释五个环节汇报。")
 
     # 2 ---------------------------------------------------------------- problem
     s = new()
@@ -285,7 +297,8 @@ def build():
          (f"每个扰动中位数只有约 115 个细胞；同一扰动拆成两半，全基因相关也只有 {nc['pearson_all']:.2f}。", {})]],
         size=14, after=5)
     footer(s, n)
-    notes(s, "（约 50 秒）为什么做这个问题：基因组合空间太大、Perturb-seq 太贵，所以需要能在计算机里先做筛选的虚拟细胞。任务形式化为：输入一个对照细胞和一个要敲低的基因，输出平均表达变化、差异基因的方向，以及这个细胞扰动后的状态。真正的难点有三个：第一，测试基因训练时完全没见过；第二，近期 Nature Methods 的工作指出，大多数扰动共享一个系统性响应，“预测平均效应”这种平凡基线就很强，很多深度模型其实打不过它；第三，测量本身噪声很大。我的评测设计就是围绕这三点展开的。")
+    notes(s, f"为什么做这个问题：基因组合太多，Perturb-seq 又贵，需要能先在计算机里筛选的虚拟细胞。任务是输入一个对照细胞和一个基因，输出平均表达变化、差异基因方向和这个细胞扰动后的状态。"
+             f"难点有三个：测试基因训练时完全没见过；多数扰动共享系统性响应，只预测平均效应的平凡基线 Top-20 DEG 相关就有 {S.loc[MS, 'pearson_de20']:.2f}；而且测量噪声很大。")
 
     # 3 ---------------------------------------------------------------- data
     s = new()
@@ -311,10 +324,35 @@ def build():
         text(s, 7.6, y, 1.45, 0.45, [a], size=13.5, bold=True, anchor=MSO_ANCHOR.MIDDLE)
         text(s, 9.05, y, 2.9, 0.45, [b_], size=12, color=TEXT2, anchor=MSO_ANCHOR.MIDDLE)
         text(s, 11.85, y, 0.9, 0.45, [c], size=13, bold=True, color=TEXT, align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE)
-    text(s, 7.25, 4.1, 5.5, 0.3, ["覆盖率 = 1,137 个被扰动基因中有该先验的比例"], size=10.5, color=MUTED)
-    picture(s, os.path.join(FIG, "fig1_data_overview.png"), 0.6, 4.4, w=12.15, h=2.55)
+    text(s, 7.25, 4.05, 5.5, 0.3, ["百分比 = 1,137 个被扰动基因中有该先验的比例"], size=10, color=MUTED)
+    box(s, 0.6, 4.4, 12.15, 0.55, fill=WHITE, line=LINE)
+    text(s, 0.75, 4.4, 11.9, 0.55, [[("敲低 vs 敲除：", {"bold": True, "color": BLUE}),
+         ("两个数据集都是 CRISPRi 敲低（dCas9-KRAB 抑制转录，不切断 DNA）。在能测到靶基因的 412 个扰动中，靶基因 100% 显著下调、"
+          "表达中位数降到接近 0，转录层面接近敲除；本项目用它回答题目中“敲除一个基因会怎样”的问题。", {})]],
+         size=12, anchor=MSO_ANCHOR.MIDDLE, line=1.05)
+    picture(s, os.path.join(FIG, "fig1_data_overview.png"), 0.6, 5.05, w=12.15, h=1.95)
     footer(s, n, "数据来源：GEARS 预处理版 (Harvard Dataverse)；GO / STRING v12 / GenePT (Zenodo 10833191)；MSigDB / CORUM (Enrichr)")
-    notes(s, "（约 50 秒）数据用了两个独立实验。主数据是 Replogle 2022 的 K562 必需基因 CRISPRi 筛选，1092 个基因敲低、16 万个细胞；外部验证用 Adamson 2016，来自另一个实验室。为了能预测没见过的基因，我把每个基因编码成四种先验知识：GO 注释、STRING 蛋白互作、GenePT 这个基于大语言模型的基因嵌入，以及数据驱动的应答谱。下面三张小图说明：扰动效应强弱差异巨大，而右边的噪声天花板告诉我们，任何模型能达到的相关性都是有上限的。")
+    notes(s, "数据是两个独立的 CRISPRi 筛选：主数据 Replogle 2022，1092 个基因敲低；外部验证用另一实验室的 Adamson 2016。题目写的是敲除，这两个数据都是敲低，"
+             "抑制转录而不切断 DNA；但能测到的靶基因表达几乎都降到零，效果接近敲除。为了预测新基因，每个基因用 GO、蛋白互作、GenePT 语言模型和应答谱四种知识编码。")
+
+    # 3b --------------------------------------------------------------- representation
+    s = new()
+    title(s, "细胞与扰动的表征", ["数据", "模型"])
+    rp = R["repr"]
+    picture(s, os.path.join(FIG, "fig_repr.png"), 0.45, 1.3, w=12.45, h=3.95)
+    cols3 = [("单细胞状态", f"扰动细胞偏离对照，不同复合体方向不同（位移 {min(rp['shift_sd'].values()):.2f}–{max(rp['shift_sd'].values()):.2f} 个对照标准差）；"
+                           "也有不少扰动细胞与对照重叠：敲低在细胞间不均一。"),
+             ("扰动应答谱", f"同一复合体的扰动聚在一起：10 近邻同类比例 {rp['knn_purity']:.0%}（随机 {rp['knn_purity_null']:.0%}）。这是“借鉴相似已测基因”的生物学基础。")]
+    if rp.get("capture_test_median") is not None:
+        cols3.append(("潜空间", f"100 维 PCA 只占单细胞方差约 15%（其余主要是测量噪声），却保留了未见扰动平均效应的 {rp['capture_test_median']:.0%}（中位数）。"))
+    for i, (h_, d) in enumerate(cols3):
+        x = 0.6 + i * 4.1
+        text(s, x, 5.35, 3.9, 0.35, [h_], size=14, bold=True, color=BLUE)
+        text(s, x, 5.72, 3.9, 1.2, [d], size=12, color=TEXT2, line=1.1)
+    footer(s, n)
+    cap_txt = f"右图说明 100 维潜空间虽只占单细胞方差的 15%，却保留了未见扰动平均效应的 {rp['capture_test_median']:.0%}。" if rp.get("capture_test_median") is not None else ""
+    notes(s, f"这一页是细胞和扰动的表征。左图是单细胞：扰动细胞偏离对照，不同复合体的偏离方向不同，也有不少扰动细胞和对照混在一起，说明敲低在细胞间并不均一。"
+             f"中图是 1092 个扰动的应答谱，同一复合体的扰动聚在一起，十个近邻里同类占 {rp['knn_purity']:.0%}，随机只有 {rp['knn_purity_null']:.0%}，这就是模型能借鉴相似基因的基础。" + cap_txt)
 
     # 4 ---------------------------------------------------------------- overview
     s = new()
@@ -344,7 +382,8 @@ def build():
         text(s, x, 4.85, 3.85, 0.4, [h_], size=16, bold=True, color=BLUE)
         text(s, x, 5.3, 3.85, 1.4, [d], size=13.5, color=TEXT2, line=1.15)
     footer(s, n)
-    notes(s, "（约 45 秒）这是整体框架。输入任意一个基因，先查出它的四种知识 token，经过 Transformer 融合；然后 PerturbFormer 拿这个表示去“查阅”所有已经测过的 1092 个扰动，注意力权重高的已测扰动，它们的真实响应被加权组合起来，再加上一个参数化分支和 CRISPRi 敲低规则，得到平均表达变化和 DEG 方向。最后，条件流匹配把这个平均变化展开成每个细胞的变化。设计原则有三条：借鉴而不是记忆；从强基线出发只学修正；两个层次的输出。")
+    notes(s, "整体框架：输入任意基因，先得到四种知识表示并用 Transformer 融合；PerturbFormer 用它查阅 1092 个已测扰动，把相似扰动的真实响应加权组合，再加上敲低规则，"
+             "得到平均变化和 DEG 方向；最后条件流匹配把它展开到每个细胞。原则是借鉴而不是记忆，从强基线出发只学修正。")
 
     # 5 ---------------------------------------------------------------- PerturbFormer
     s = new()
@@ -396,7 +435,9 @@ def build():
     text(s, 7.6, 5.45, 5.15, 1.1, [f"{gname} 是蛋白酶体 20S 核心亚基。训练时从未见过它，模型注意力最高的 {len(nb)} 个已测扰动中有 {n_psm} 个是其他蛋白酶体亚基，"
                                    "预测就是它们真实响应的加权组合：可解释、可追溯。"], size=12.5, color=TEXT2, line=1.15)
     footer(s, n)
-    notes(s, f"（约 60 秒）PerturbFormer 的核心公式在左上：它是一个交叉注意力，Query 是待预测基因的知识表示，Key 是已测基因的知识表示，Value 是已测基因的真实响应。关键设计是“知识核”：注意力的 logits 直接由各知识源的余弦相似度组成，投影矩阵初始化为单位阵，所以模型一开始就等价于一个多源 kNN，训练只需要学习修正量。另外模型会针对每个基因自己决定更相信哪种知识。右边是一个真实例子：预测 {gname} 时它从未见过这个基因，但注意力几乎都落在其他蛋白酶体亚基上。这就是可解释性：每个预测都能追溯到它参考了哪些实验。")
+    notes(s, f"PerturbFormer 是一个交叉注意力：Query 是待预测基因的知识，Key 是已测基因的知识，Value 是已测基因的真实响应。关键是知识核：注意力分数由各知识源的余弦相似度构成，"
+             f"初始时等价于多源 kNN，训练只学修正量，样本少也不过拟合；模型还会针对每个基因决定更相信哪种知识。右边是真实例子：预测 {gname} 时它从没见过这个基因，"
+             f"注意力最高的 {len(nb)} 个已测扰动中有 {n_psm} 个是其他蛋白酶体亚基。")
 
     # 6 ---------------------------------------------------------------- benchmark design
     s = new()
@@ -407,8 +448,10 @@ def build():
         text(s, 0.6, y, 0.8, 0.4, [f"第 {k + 1} 折"], size=12, color=TEXT2, anchor=MSO_ANCHOR.MIDDLE)
         for j in range(5):
             box(s, 1.45 + j * 0.92, y + 0.04, 0.86, 0.32, fill=BLUE if j == k else "DCE6F2", radius=0.15)
+    nsplit = R["splits"].split_seed.nunique() if R["splits"] is not None else 1
     text(s, 1.45, 4.5, 4.6, 0.8, [[("■ ", {"color": BLUE}), ("测试：20% 基因完全不参与训练　", {}), ("■ ", {"color": "B8CBE3"}), ("训练", {})],
-                                  "每个基因恰好被预测一次 → 1,092 个 out-of-fold 预测"], size=12, color=TEXT2, after=3)
+                                  "每个基因恰好被预测一次 → 1,092 个 out-of-fold 预测" + (f"；换 {nsplit} 种随机划分重复" if nsplit > 1 else "")],
+         size=12, color=TEXT2, after=3)
     box(s, 0.6, 5.35, 5.6, 1.2, fill=TINT)
     sw = pd.read_csv(os.path.join(RES, "dev_sweep.csv"))
     rng_de = sw.pearson_de20.max() - sw.pearson_de20.min()
@@ -427,7 +470,8 @@ def build():
         text(s, 6.9, y, 2.95, 0.64, [a], size=13, bold=True, anchor=MSO_ANCHOR.MIDDLE)
         text(s, 9.85, y, 2.85, 0.64, [b_], size=11.5, color=TEXT2, anchor=MSO_ANCHOR.MIDDLE, line=1.0)
     footer(s, n)
-    notes(s, "（约 50 秒）评测的严谨性是这个项目的重点。第一，按基因划分 5 折，每折 20% 的基因完全不出现在训练里，每个基因都恰好被预测一次。第二，开发集和测试集严格分离，所有超参数只在第 0 折训练集内部的开发集上选，测试折从来不参与调参。第三，指标不只看相关性：特别加入了 Systema 去偏指标，它会把平均响应减掉，平凡基线在这个指标上恒为 0；还有 DEG 方向准确率、扰动识别排名，以及噪声天花板和配对检验。")
+    notes(s, "评测设计：按基因五折划分，每折 20% 的基因完全不进训练，每个基因恰好被预测一次；超参数只在开发集上选，测试折不参与调参" + ("；还换了多种随机划分重复。" if nsplit > 1 else "。")
+             + "指标不只看相关性：去偏 Pearson 下平凡基线恒为 0；另有 DEG 方向、识别排名、单细胞分布距离、噪声上限和配对检验。")
 
     # 7 ---------------------------------------------------------------- main results (native chart)
     s = new()
@@ -486,15 +530,41 @@ def build():
         return better, worse, len(keym) - better - worse
     b_lin = verdict(LIN)
     b_knn = verdict(KNN)
+
+    def verdict_splits(other):
+        """significant wins / ties / losses over all available CV splits x 6 metrics"""
+        from scipy.stats import wilcoxon as _w
+        w = t = l = 0
+        nspl = 0
+        for d in ("", "_seed1", "_seed2"):
+            fp = os.path.join(ROOT, "results", "replogle_k562_essential" + d, "per_perturbation_metrics.csv")
+            if not os.path.exists(fp):
+                continue
+            nspl += 1
+            mm_ = pd.read_csv(fp)
+            for k in keym:
+                q = mm_.pivot(index="pert", columns="model", values=k).dropna(subset=[PF, other])
+                dlt = q[PF].mean() - q[other].mean()
+                if k == "rank":
+                    dlt = -dlt
+                if _w(q[PF], q[other]).pvalue < 0.05:
+                    w, l = w + (dlt > 0), l + (dlt < 0)
+                else:
+                    t += 1
+        return w, t, l, nspl
+    vs = verdict_splits(KNN)
     stat(s, 9.2, 1.45, 3.6, f"+{pf.pearson_sys - S.loc[LIN, 'pearson_sys']:.3f}",
          f"去偏 Pearson 超过线性基线（{S.loc[LIN, 'pearson_sys']:.3f} → {pf.pearson_sys:.3f}），6 项指标中 {b_lin[0]} 项显著更好")
     stat(s, 9.2, 2.95, 3.6, f"{pf.pearson_sys / nc['pearson_sys_pred_ceiling']:.0%}",
          f"达到测量噪声决定的可达上限（去偏 {nc['pearson_sys_pred_ceiling']:.2f}）；均值平移为 0")
-    stat(s, 9.2, 4.45, 3.6, f"{b_knn[0]} 优 · {b_knn[2]} 平 · {b_knn[1]} 劣",
-         "对比 kNN 多源先验（同为本项目的知识检索思路）：差距小，但多数指标显著领先", vsize=24)
-    text(s, 9.2, 5.85, 3.6, 0.9, ["配对 Wilcoxon 检验，n = 1,092 个未见基因（5 折 out-of-fold）"], size=11, color=MUTED)
+    stat(s, 9.2, 4.45, 3.6, f"{vs[0]} 优 · {vs[1]} 平 · {vs[2]} 劣",
+         f"对比 kNN 多源先验：{vs[3]} 种随机划分 × 6 项指标的配对检验。差距小，但稳定领先", vsize=24)
+    text(s, 9.2, 5.85, 3.6, 0.9, ["配对 Wilcoxon 检验，每种划分 n = 1,092 个未见基因（5 折 out-of-fold）"], size=11, color=MUTED)
     footer(s, n, "完整表格与 95% CI：results/replogle_k562_essential/main_table.md")
-    notes(s, f"（约 60 秒）这是主结果，1092 个未见基因的平均值，蓝色是 PerturbFormer。先看灰色的均值平移：全基因相关 {S.loc[MS, 'pearson_all']:.2f}，看起来不差，但去偏 Pearson 为 0，说明它没有任何扰动特异的信息。文献里的线性基线和标准深度模型都明显好于它，而我们基于知识检索的两个模型又明显好于它们：PerturbFormer 的去偏 Pearson 是 {pf.pearson_sys:.3f}，比线性基线高 {pf.pearson_sys - S.loc[LIN, 'pearson_sys']:.3f}，达到测量噪声上限的 {pf.pearson_sys / nc['pearson_sys_pred_ceiling']:.0%}。要如实说明的是：可学习的 PerturbFormer 和简单的多源 kNN 差距很小，6 项指标中 {b_knn[0]} 项显著领先、{b_knn[1]} 项略逊。所以真正起作用的是“多源知识检索”这个思路，PerturbFormer 的增益在于小幅提升和可解释性。")
+    sp_txt = f"；把五折划分换 {vs[3]} 种随机种子重做，{vs[3] * 6} 次比较中 {vs[0]} 次显著领先、{vs[2]} 次略逊" if vs[3] > 1 else ""
+    notes(s, f"主结果。灰色的均值平移全基因相关 {S.loc[MS, 'pearson_all']:.2f}，看起来不差，但去偏 Pearson 为 0，没有任何扰动特异信息。线性基线和深度模型都好于它，知识检索的两个模型又更好："
+             f"PerturbFormer 去偏 Pearson {pf.pearson_sys:.3f}，比线性基线高 {pf.pearson_sys - S.loc[LIN, 'pearson_sys']:.3f}，达到噪声上限的 {pf.pearson_sys / nc['pearson_sys_pred_ceiling']:.0%}。"
+             f"如实说明：它和多源 kNN 差距很小{sp_txt}。真正起作用的是多源知识检索这个思路，PerturbFormer 带来稳定的小幅提升和可解释性。")
 
     # 8 ---------------------------------------------------------------- priors & ablation (native charts)
     s = new()
@@ -581,7 +651,8 @@ def build():
               (f"知识核注意力、三种外部知识缺一不可；CRISPRi 敲低规则使 Top-20 DEG 相关 +{kd_gain:.3f}。", {})]]
     text(s, 0.6, 5.25, 6.0, 1.6, lines, size=13, after=6, line=1.12)
     footer(s, n)
-    notes(s, f"（约 45 秒）左图比较单独使用每种先验知识时的效果：{names[order_src[0]]} 最强，纯数据驱动的应答谱几乎不能泛化，而多源融合最好。右图是消融实验，条越长表示去掉该组件后下降越多：最关键的是 {drops[0][0]}、{drops[1][0]} 和 {drops[2][0]}。知识核注意力也很重要，换成从零学习的注意力会明显变差，验证了从强基线出发只学修正量的设计。敲低规则主要提升 Top-20 DEG 相关，因为被敲低的靶基因通常就是最强的差异基因。")
+    notes(s, f"左图：单独用一种先验时 {names[order_src[0]]} 最强，纯数据驱动的应答谱几乎不能泛化，多源融合最好。右图是消融，影响最大的是{drops[0][0]}、{drops[1][0]}和{drops[2][0]}；"
+             f"换成从零学习的注意力会变差，说明从多源 kNN 出发只学修正是必要的。敲低规则让 Top-20 DEG 相关提升 {kd_gain:.2f}。")
 
     # 9 ---------------------------------------------------------------- flow
     s = new()
@@ -602,12 +673,15 @@ def build():
         win = (pv["CFM (ours)"] < pv["PerturbFormer-shift"]).mean()
         stat(s, 0.6, 4.85, 1.7, f"{(e_cfm / e_sh - 1):+.0%}", "能量距离 (vs 仅平移均值)", vsize=30)
         stat(s, 2.4, 4.85, 1.7, f"{(v_cfm / v_sh - 1):+.0%}", "方差误差 (vs 仅平移均值)", vsize=30)
-        stat(s, 4.2, 4.85, 1.7, f"{win:.0%}", "未见扰动上更好 (p<1e-38)", vsize=30)
+        from scipy.stats import wilcoxon as _w
+        pval = _w(pv["CFM (ours)"], pv["PerturbFormer-shift"]).pvalue
+        stat(s, 4.2, 4.85, 1.7, f"{win:.0%}", f"未见扰动上更好 (p={pval:.0e})", vsize=30)
         flow_note = (f"能量距离 {e_sh:.2f} → {e_cfm:.2f}，方差误差 {v_sh:.3f} → {v_cfm:.3f}；而使用真实均值的 Oracle 平移能量距离为 {e_or:.2f}，"
                      "说明剩余误差主要来自对未见基因平均效应的预测，而不是分布形状。")
     picture(s, os.path.join(FIG, "fig7_flow_slide.png"), 6.2, 1.3, w=6.65, h=5.6)
     footer(s, n)
-    notes(s, "（约 50 秒）这是题目要求的高级版本：生成模型。我用条件流匹配在 PCA 空间里学习一个速度场，把对照细胞的分布连续地推到扰动后细胞的分布，训练时用最优传输把对照细胞和扰动细胞配对，所以模型学到的是“这个细胞被敲低后会去哪里”。条件来自 PerturbFormer 的预测，所以它同样能处理没见过的基因。" + flow_note)
+    notes(s, "高级版本是条件流匹配：在 PCA 潜空间学一个速度场，把对照细胞连续推到扰动后的分布；训练用最优传输配对，条件来自 PerturbFormer 的预测，所以也能处理未见基因。"
+             "潜空间每折只用训练细胞拟合。" + flow_note)
 
     # 10 --------------------------------------------------------------- external
     s = new()
@@ -631,7 +705,8 @@ def build():
                           (f"Adamson 中系统性响应占主导，均值平移的方向准确率 ({dir_rank.iloc[0]:.2f}) 反而最高，但它的去偏相关为 0。", {})])
         text(s, 4.6, 4.75, 8.2, 2.2, paras, size=12, after=5, line=1.1)
     footer(s, n)
-    notes(s, "（约 45 秒）为了检验泛化，我做了外部验证：只用 Replogle 训练，并把 Adamson 的全部靶基因从训练里去掉，然后预测另一个实验室的 Adamson 数据。这里的上限很低：即使拿 Replogle 里同一个基因的实测结果去预测 Adamson，相关性也有限，说明跨实验室批次差异很大。在这个上限之下，我们对完全未见基因的预测达到了上限的大部分。")
+    notes(s, f"外部验证：只用 Replogle 训练，并去掉 Adamson 的全部靶基因，再预测另一实验室的数据。上限本身很低，直接拿 Replogle 里同一基因的实测去预测，全基因相关也只有 {c['pearson_all']:.2f}。"
+             "我们对未见基因达到了这一上限的大部分；跨实验室时 kNN 在部分指标上略好，可学习模型的小优势没有保持，这点如实报告。")
 
     # 11 --------------------------------------------------------------- biology 1
     s = new()
@@ -652,7 +727,8 @@ def build():
         [("CRISPRi 自检：", {"bold": True, "color": BLUE}), ("被靶向的基因本身显著下调，且几乎总是该扰动排名第一的差异基因。", {})]],
         size=13.5, after=8, line=1.13)
     footer(s, n)
-    notes(s, f"（约 45 秒）生物学解释的第一部分：模型的预测是否保留了真实的生物学结构？左上：在实测数据中，同一个蛋白复合体的成员被敲低后响应很相似，这是模型能够“借鉴”的生物学基础；预测出的应答谱同样保留了这种复合体结构。右边是通路层面，横轴是预测和实测通路活性在一千多个扰动之间的相关，{'、'.join(top3)} 等通路预测得最好，而均值平移在通路层面完全没有区分能力。")
+    notes(s, f"预测是否保留了真实的生物学结构？左图：实测中同一复合体的成员敲低后响应相似，预测的应答谱也保留了这种结构。右图是通路层面，{'、'.join(top3)} 预测最好，"
+             f"平均相关 {pw.loc['PerturbFormer+KD', 'mean_r_per_pathway']:.2f}，而均值平移在通路层面完全没有区分能力。")
 
     # 12 --------------------------------------------------------------- case studies
     s = new()
@@ -675,28 +751,36 @@ def build():
         [("启示：", {"bold": True}), ("谱系特异的功能无法靠“相似基因”外推，这正是最需要做实验的地方。", {})]],
         size=13, after=6, line=1.12)
     footer(s, n)
-    notes(s, f"（约 50 秒）四个案例，全部是模型训练时没见过的基因。RPS19 是 Diamond-Blackfan 贫血的致病基因，MED12 是 Mediator 亚基，PSMB5 是蛋白酶体亚基，这些基因所在复合体的其他成员都测过，模型借鉴它们，预测非常准确。GATA1 是一个很有启发的失败：它是红系主转录因子，K562 的细胞身份依赖它，但训练集中没有效应相同的基因，模型参考了 {'、'.join(gnb)} 等一般转录因子，把血红蛋白基因的方向预测反了。这说明谱系特异的主调控因子不能靠相似基因外推，恰恰是最需要实验的地方。")
+    notes(s, f"四个案例都是训练时没见过的基因。RPS19、MED12、PSMB5 所在复合体的其他成员都测过，模型借鉴它们，富集结果与实测一致。GATA1 是有启发的失败：它是红系主转录因子，"
+             f"训练集中没有效应相同的基因，模型参考了 {'、'.join(gnb[:3])} 等一般转录因子，MYC 靶基因下调对了，血红蛋白基因方向却反了。谱系特异的功能不能靠相似基因外推，恰恰最需要实验。")
 
-    # 13 --------------------------------------------------------------- interpretability + failure
+    # 13 --------------------------------------------------------------- where are the errors?
     s = new()
-    title(s, "模型如何决策，何时会失败？", "解释")
-    picture(s, os.path.join(FIG, "fig_interp_F_sources.png"), 0.5, 1.35, w=6.3, h=5.2)
-    picture(s, os.path.join(FIG, "fig_interp_E_failure.png"), 6.95, 1.35, w=5.85, h=2.6)
+    title(s, "错误出在哪里？", "解释")
+    picture(s, os.path.join(FIG, "fig_interp_H_direction.png"), 0.5, 1.35, w=6.4, h=2.3)
+    picture(s, os.path.join(FIG, "fig_interp_E_failure.png"), 7.05, 1.35, w=5.8, h=2.1)
+    dn = R["dirn"].loc[PF]
+    cal = json.load(open(os.path.join(ROOT, "results", "interpretation", "reliability.json")))
+    rel_txt = " / ".join(f"{x:.2f}" for x in cal["mean_pearson_sys"])
     fa = R["fail"]
     from scipy.stats import spearmanr
     rho1 = spearmanr(fa.max_prior_sim_to_train, fa.pearson_sys)[0]
     rho2 = spearmanr(np.log10(fa.n_deg + 1), fa.pearson_sys)[0]
-    named = R["cls"][(R["cls"].n >= 5) & (~R["cls"]["class"].str.startswith("其他"))]
-    best, worst = named.iloc[0], named.iloc[-1]
-    text(s, 6.95, 4.15, 5.85, 2.6, [
-        [("类别差异：", {"bold": True, "color": BLUE}),
-         (f"{best['class']} 最可预测（去偏 r = {best['PerturbFormer+KD|pearson_sys']:.2f}），{worst['class']} 最难（{worst['PerturbFormer+KD|pearson_sys']:.2f}）。", {})],
-        [("失败模式：", {"bold": True, "color": ORANGE}),
-         (f"训练集中没有相似基因（Spearman ρ = {rho1:.2f}）或扰动效应弱（ρ = {rho2:.2f}）时性能下降。", {})],
+    strong = min(dn["acc|dlt 0.2–0.5"], dn["acc|dlt >0.5"])
+    stat(s, 0.6, 3.95, 2.0, f"{dn.acc_all_sig:.1%}", f"全部 {dn.n_sig_deg / 1e4:.0f} 万个显著 DEG 的方向准确率（AUROC {dn.auroc_up_vs_down:.2f}）", vsize=30, h=1.4)
+    stat(s, 2.8, 3.95, 2.0, f"≥{strong:.0%}", "变化幅度 |Δ| > 0.2 的 DEG", vsize=30, h=1.4)
+    stat(s, 5.0, 3.95, 1.9, f"{dn['acc|dlt <0.05']:.0%}", "|Δ| < 0.05 的弱变化 DEG", vsize=30, h=1.4, color=ORANGE)
+    text(s, 0.6, 5.55, 6.3, 1.3, [[("基因层面：", {"bold": True, "color": BLUE}),
+         ("方向错误集中在接近噪声的弱变化基因；题目要求的“DEG 方向预测”对强效应基因已相当可靠。", {})]], size=13, line=1.12)
+    text(s, 7.05, 3.85, 5.8, 3.0, [
+        [("扰动层面：", {"bold": True, "color": BLUE}), (f"训练集中没有相似基因（Spearman ρ = {rho1:.2f}）或扰动效应弱（ρ = {rho2:.2f}）时，整体预测变差。", {})],
+        [("可以事先判断：", {"bold": True, "color": BLUE}), (f"按先验相似度分低/中/高三档，交叉验证去偏 Pearson 依次为 {rel_txt}；"
+                                                          "预测工具会自动给出评级（GATA1 被评为“低”）。", {})],
         [("启示：", {"bold": True}), ("下一轮实验应优先测知识空间中离已测基因最远的基因（主动学习）。", {})]],
-        size=13, after=7, line=1.12)
+        size=13, after=8, line=1.12)
     footer(s, n)
-    notes(s, "（约 40 秒）左图是模型在不同基因类别上对四种知识的信任分配，它是自适应的：例如 Mediator 更依赖蛋白互作网络，翻译起始因子更依赖语言模型的知识。右上两张图显示失败模式：训练集里没有相似的基因，或者扰动本身效应很弱时，预测会变差。这给出一个实际建议：下一轮实验应该优先测知识空间中离已测基因最远的基因，也就是主动学习。")
+    notes(s, f"错误出在哪里？左图是基因层面：在全部 {dn.n_sig_deg / 1e4:.0f} 万个显著差异基因上，方向准确率 {dn.acc_all_sig:.0%}，变化幅度大于 0.2 的基因在 {strong:.0%} 以上，"
+             f"错误集中在接近噪声的弱变化基因。右图是扰动层面：训练集中没有相似基因，或者扰动本身效应弱时，预测变差。先验相似度在预测前就能算出，按它分三档，去偏 Pearson 从 {cal['mean_pearson_sys'][0]:.2f} 升到 {cal['mean_pearson_sys'][2]:.2f}，预测工具会自动给出可靠性评级，GATA1 就被评为低。这也提示下一轮实验应该优先测离已测基因最远的基因。")
 
     # 14 --------------------------------------------------------------- demo
     s = new()
@@ -707,7 +791,7 @@ def build():
          size=13, color="D6E2EC", font=MONO, after=0, anchor=MSO_ANCHOR.MIDDLE)
     rep_path = os.path.join(ROOT, "results", "predictions", demo_gene, "report.md")
     rep = open(rep_path).read().splitlines()[2:] if os.path.exists(rep_path) else []
-    keep = ("是否测过", "依据", "知识来源", "预测下调", "预测上调", "通路活性下降")
+    keep = ("是否测过", "可靠性", "依据", "预测下调", "通路活性下降")
     rep = [r.lstrip("- ") for r in rep if any(k in r for k in keep)]
     rep = [r.replace(" (注意力权重)", "").replace("训练筛选中是否测过该扰动", "筛选中是否测过") for r in rep]
 
@@ -718,7 +802,8 @@ def build():
         sep = "; " if "; " in body else ", "
         items = body.split(sep)
         return head + ": " + sep.join(items[:k]) + (" …" if len(items) > k else "")
-    rep = [first_items(r) for r in rep]
+    rep = [first_items(r, 3) if not r.startswith("预测可靠性") else
+           r.split(" (")[0] + "（最相似的已测扰动: " + r.split("最相似: ")[1].split(";")[0] + "）" for r in rep]
     text(s, 0.6, 2.55, 5.4, 3.0, rep, size=12, color=TEXT2, bullet=True, after=5, line=1.05)
     text(s, 0.6, 5.55, 5.4, 1.3, [[("输出：", {"bold": True}), ("单细胞表达 (h5ad)、伪批量变化表、证据报告与可视化；支持约 2.1 万个人类基因；交互式网页可浏览全部 1,092 个预测。", {})]],
          size=12.5, line=1.12)
@@ -726,7 +811,8 @@ def build():
     if os.path.exists(demo):
         picture(s, demo, 6.2, 1.5, w=6.65, h=5.2)
     footer(s, n)
-    notes(s, f"（约 40 秒）最终成果是一个可以直接使用的虚拟细胞原型。一行命令：输入一批对照细胞和一个基因，输出这些细胞被敲低后的表达谱、伪批量变化表，以及一份证据报告，说明模型参考了哪些已测实验、信任哪种知识、哪些通路会变化。右图是 {demo_gene}：它在这个筛选中从未被扰动过。模型参考了 MAX（MYC 的必需结合伙伴）等转录因子，预测 MYC 靶基因整体下调，这与 MYC 的已知功能一致。灰色是输入的对照细胞，蓝色是预测的敲低后细胞，右边是变化最大的基因。需要说明的是，这类全新基因的预测无法直接验证，模型的定量准确性以前面交叉验证的结果为准。")
+    notes(s, f"最终成果：一行命令，输入一批对照细胞和一个基因，输出这些细胞敲低后的表达、伪批量变化表和证据报告。右图是 {demo_gene}，它在筛选中从未被扰动过，"
+             "模型参考了 MAX 等转录因子，预测 MYC 靶基因整体下调，与已知功能一致；这类新基因无法直接验证，定量准确性以交叉验证为准。")
 
     # 15 --------------------------------------------------------------- conclusion
     s = new()
@@ -745,10 +831,12 @@ def build():
          size=13.5, color="D6E2EC", after=4, line=1.12)
     text(s, 6.8, 5.6, 5.8, 1.4, [[("展望", {"bold": True, "color": "7FB2F0"})], "跨细胞系迁移 (K562 → RPE1)；组合扰动；用不确定性驱动主动学习选择下一轮实验"],
          size=13.5, color="D6E2EC", after=4, line=1.12)
-    notes(s, "（约 40 秒）总结：问题上，我把“敲低一个新基因会怎样”形式化为未见扰动泛化，并正视系统偏差和测量噪声；模型上，核心思路是多源知识检索，PerturbFormer 是它的可学习、可解释版本，流匹配把它展开到单细胞；评测上，它显著优于文献中的线性基线和深度模型，小幅优于多源 kNN，并通过了跨实验室验证；解释上，预测保留了复合体和通路结构，每个预测都能追溯，同时我们也明确了失败边界。局限是只有一个细胞系、只做单基因；未来可以做跨细胞系迁移、组合扰动和主动学习。谢谢大家。")
+    notes(s, "总结：我把敲低新基因会怎样形式化为未见扰动泛化，用多源知识检索加流匹配实现了输入细胞和基因、输出扰动后状态；在严格评测下显著优于文献基线，并通过跨实验室验证；"
+             "预测保留了复合体和通路结构，每个预测可追溯，失败边界也很清楚。局限是只有一个细胞系、只做单基因敲低。谢谢。")
 
     prs.save(OUT)
     print("saved", OUT, f"({n} slides)")
+    print(f"estimated talk time: {sum(TALK)} s = {sum(TALK) / 60:.1f} min; per slide: {TALK}")
 
 
 if __name__ == "__main__":

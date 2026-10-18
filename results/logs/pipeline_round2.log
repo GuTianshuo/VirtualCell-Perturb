@@ -1,0 +1,11 @@
+[23:43:15] start 05_flow_foldpca
+[00:20:06] done  05_flow_foldpca
+[00:20:06] start 03_benchmark_seed1
+[00:39:33] done  03_benchmark_seed1
+[00:39:33] start 03_benchmark_seed2
+[00:55:06] done  03_benchmark_seed2
+[00:55:06] start 03c_split_robustness
+[00:55:08] done  03c_split_robustness
+[00:55:08] start 09_figures_round2
+[00:55:13] done  09_figures_round2
+[00:55:13] ALL DONE

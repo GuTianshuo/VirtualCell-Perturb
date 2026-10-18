@@ -66,6 +66,9 @@ def main():
         ctrl_latent=Z[rng.choice(ctrl_idx, 3000, replace=False)],
     )
     shutil.copy(os.path.join(PROC, "gene_universe_embeddings.npz"), os.path.join(out, "gene_universe_embeddings.npz"))
+    rel = os.path.join(ROOT, "results", "interpretation", "reliability.json")   # from 07_interpretation.py
+    if os.path.exists(rel):
+        shutil.copy(rel, os.path.join(out, "reliability.json"))
     with open(os.path.join(out, "config.json"), "w") as fh:
         json.dump({"dataset": DS, "n_ens": N_ENS, "basis_k": 32,
                    "dims": {k: int(v.shape[1]) for k, v in feats.items()},

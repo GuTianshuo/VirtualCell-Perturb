@@ -198,6 +198,15 @@ def main():
     fdf = pd.DataFrame({"pert": perts, "max_prior_sim_to_train": nov, "n_deg": ndeg, "n_cells": pdat.n_cells,
                         "pearson_sys": mm.pearson_sys.values, "pearson_de20": mm.pearson_de20.values, "class": cls})
     fdf.to_csv(os.path.join(OUT, "failure_analysis.csv"), index=False)
+    # reliability calibration for the predictor: tertiles of prior similarity -> observed accuracy
+    import json
+    edges = np.quantile(nov, [1 / 3, 2 / 3])
+    tier = np.digitize(nov, edges)
+    with open(os.path.join(OUT, "reliability.json"), "w") as fh:
+        json.dump({"definition": "max cosine similarity of concatenated GO/PPI/GenePT embeddings to any measured perturbation",
+                   "edges": [float(e) for e in edges],
+                   "mean_pearson_sys": [float(fdf.pearson_sys[tier == k].mean()) for k in range(3)],
+                   "mean_pearson_de20": [float(fdf.pearson_de20[tier == k].mean()) for k in range(3)]}, fh, indent=1)
     rho_nov = spearmanr(nov, fdf.pearson_sys)[0]
     rho_deg = spearmanr(ndeg, fdf.pearson_sys)[0]
     fig, ax = plt.subplots(1, 2, figsize=(9, 3.2))
@@ -307,6 +316,51 @@ def main():
     fig.savefig(os.path.join(FIG, "fig_interp_G_cases.png"))
     plt.close(fig)
     report += case_md
+
+    # ---------------- H. DEG direction: where are the sign errors? -----------------------------
+    from sklearn.metrics import roc_auc_score
+    sig = pdat.fdr < 0.05
+    mag = np.abs(Y)[sig]
+    true_up = Y[sig] > 0
+    edges = [0, 0.05, 0.1, 0.2, 0.5, np.inf]
+    blab = ["<0.05", "0.05–0.1", "0.1–0.2", "0.2–0.5", ">0.5"]
+    bin_id = np.digitize(mag, edges[1:-1])
+    drows = []
+    models_h = [MAIN, "kNN-concat+KD", "PerturbNet-attn+KD", "Linear-concat+KD", "Mean-shift"]
+    for mdl in models_h:
+        pv = oof[key(mdl)][sig]
+        ok = (pv > 0) == true_up
+        r = {"model": mdl, "n_sig_deg": int(sig.sum()), "acc_all_sig": float(ok.mean()),
+             "auroc_up_vs_down": float(roc_auc_score(true_up, pv))}
+        for k, bl in enumerate(blab):
+            r[f"acc|dlt {bl}"] = float(ok[bin_id == k].mean())
+        drows.append(r)
+    ddf = pd.DataFrame(drows).set_index("model")
+    ddf.to_csv(os.path.join(OUT, "deg_direction.csv"))
+    frac_bin = np.bincount(bin_id, minlength=len(blab)) / len(bin_id)
+    fig, ax = plt.subplots(1, 2, figsize=(10, 3.4), gridspec_kw={"width_ratios": [1.6, 1]})
+    for mdl in models_h:
+        ax[0].plot(range(len(blab)), [ddf.loc[mdl, f"acc|dlt {bl}"] for bl in blab], marker="o", ms=5,
+                   color=vp.model_color(mdl), lw=2, label=mdl.replace("+KD", ""))
+    ax[0].set_xticks(range(len(blab)))
+    ax[0].set_xticklabels(blab)
+    ax[0].set_xlabel("真实变化幅度 |Δ| (显著 DEG, FDR<0.05)")
+    ax[0].set_ylabel("上调/下调方向准确率")
+    ax[0].set_ylim(0.45, 1.0)
+    ax[0].axhline(0.5, color=vp.AXIS, lw=1)
+    ax[0].legend(fontsize=7.5, loc="lower right")
+    ax[0].set_title("方向错误集中在弱变化基因上")
+    ax[1].bar(blab, frac_bin, color=vp.MUTED, width=0.6)
+    for i, v in enumerate(frac_bin):
+        ax[1].text(i, v + 0.01, f"{v:.0%}", ha="center", fontsize=8.5, color=vp.INK2)
+    ax[1].set_xlabel("|Δ|")
+    ax[1].set_title(f"显著 DEG 的幅度分布 (n={sig.sum():,})")
+    ax[1].grid(axis="x", visible=False)
+    fig.tight_layout()
+    fig.savefig(os.path.join(FIG, "fig_interp_H_direction.png"))
+    plt.close(fig)
+    report.append("## H. DEG 方向预测 (全部显著 DEG, 按真实变化幅度分层)\n" + ddf.round(3).to_markdown() + "\n"
+                  + "幅度分布: " + ", ".join(f"{bl}: {v:.1%}" for bl, v in zip(blab, frac_bin)) + "\n")
 
     with open(os.path.join(OUT, "interpretation_report.md"), "w") as fh:
         fh.write("# 生物学解释结果 (自动生成)\n\n" + "\n".join(report))

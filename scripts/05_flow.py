@@ -9,6 +9,9 @@ For every CV fold (same unseen-perturbation folds as 03_benchmark.py):
   4. for each unseen test perturbation, push 300 control cells through the flow and compare
      the generated population with the real perturbed cells.
 
+Leakage control: the PCA latent space is re-fitted in every fold on control cells and cells of
+the TRAINING perturbations only, so held-out perturbations never shape the coordinate system.
+
 Single-cell baselines (same 300 control cells as input):
   No-change            control cells as they are
   Mean-shift           control + mean training shift
@@ -26,13 +29,15 @@ import os
 import sys
 import time
 
+import anndata as ad
 import numpy as np
 import pandas as pd
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from vcp.baselines import knockdown_fraction, knockdown_rule  # noqa: E402
-from vcp.data import ensure_dir, kfold_perturbation_split, train_val_split  # noqa: E402
+from vcp.data import (cell_labels, ensure_dir, fit_cell_pca, kfold_perturbation_split,  # noqa: E402
+                      project_cells, train_val_split)
 from vcp.flow import FlowModel, decode  # noqa: E402
 from vcp.metrics import energy_distance, evaluate, summarise  # noqa: E402
 from vcp.models import predict_perturbformer, predict_perturbformer_loo, train_perturbformer  # noqa: E402
@@ -68,14 +73,17 @@ def main():
     t0 = time.time()
     b = load_bundle(args.dataset)
     cells = np.load(os.path.join(PROC, f"{args.dataset}_cells.npz"), allow_pickle=True)
-    Z, lab, ctrl_label = cells["Z"], cells["label"], int(cells["ctrl_label"])
-    comps, ctrl_mean = cells["components"], cells["ctrl_mean"]
+    lab, ctrl_label, ctrl_mean = cells["label"], int(cells["ctrl_label"]), cells["ctrl_mean"]
+    adata = ad.read_h5ad(os.path.join(ROOT, "data", "raw", args.dataset, "perturb_processed.h5ad"), backed="r")
+    lab_full = cell_labels(adata.obs["condition"].values, b.pdat.perts)
+    keep = lab_full >= 0
+    assert np.array_equal(lab_full[keep], lab), "cell labels out of sync with 01_preprocess output"
     res_dir = ensure_dir(os.path.join(ROOT, "results", args.dataset))
     fold = kfold_perturbation_split(b.pdat.perts, 5, 0)
     ctrl_idx = np.nonzero(lab == ctrl_label)[0]
     rng = np.random.default_rng(args.seed)
 
-    sc_rows, pb_preds, examples = [], {}, {}
+    sc_rows, pb_preds, examples, cap_rows = [], {}, {}, []
     EXAMPLES = {"GATA1", "RPS19", "PSMB5", "MED12", "CHMP3", "POLR2A", "SUPT5H", "EIF2S1"}
     for f in [int(x) for x in args.folds.split(",")]:
         te = np.nonzero(fold == f)[0]
@@ -83,6 +91,15 @@ def main():
         tr, va = train_val_split(tr_all, 0.1, f)
         feats, masks = b.fold_features(tr_all)
         kd = knockdown_fraction(b.pdat.pert_mean[tr_all], ctrl_mean, b.target_idx[tr_all])
+
+        # ---- 0. fold-specific latent space: PCA fitted on control + TRAINING perturbation cells only
+        comps, evr = fit_cell_pca(adata.X, lab_full, tr_all, ctrl_label, ctrl_mean, seed=args.seed + f)
+        Z = project_cells(adata.X, comps, ctrl_mean)[keep]
+        for p in range(len(b.pdat.perts)):   # how much of each mean response does the latent space hold?
+            d = b.Y[p]
+            cap_rows.append({"fold": f, "pert": b.pdat.perts[p], "split": "test" if fold[p] == f else "train",
+                             "frac_delta_captured": float(((d @ comps.T) ** 2).sum() / max((d ** 2).sum(), 1e-12))})
+        print(f"[fold {f}] PCA on training cells: explained var {evr.sum():.3f} ({time.time() - t0:.0f}s)")
 
         # ---- 1-2. PerturbFormer predictions -> flow conditions ----------------------------------
         p_te, p_tr = [], []
@@ -133,6 +150,7 @@ def main():
                     pb_preds.setdefault(name, np.zeros_like(b.Y))[p] = X.mean(0) - ctrl_mean
         print(f"[fold {f}] evaluated {len(te)} unseen perturbations ({time.time() - t0:.0f}s)")
         pd.DataFrame(sc_rows).to_csv(os.path.join(res_dir, "flow_singlecell_metrics.csv"), index=False)
+        pd.DataFrame(cap_rows).to_csv(os.path.join(res_dir, "flow_pca_capture.csv"), index=False)
 
     np.savez_compressed(os.path.join(res_dir, "flow_examples.npz"),
                         **{f"{g}|{k}": v for g, d in examples.items() for k, v in d.items()})

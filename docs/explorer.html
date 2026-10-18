@@ -43,7 +43,8 @@
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: var(--t-md); line-height: 1.55; }
-.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 48px; display: grid; gap: 22px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.wrap > * { min-width: 0; }
 h1, h2, h3 { font-family: var(--f-head); font-weight: 600; margin: 0; text-wrap: balance; letter-spacing: 0.01em; }
 h1 { font-size: var(--t-xl); line-height: 1.15; }
 h2 { font-size: var(--t-lg); }
@@ -103,7 +104,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .key { display: inline-flex; align-items: center; gap: 6px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
 svg { display: block; width: 100%; height: auto; max-width: 100%; }
-svg text { fill: var(--ink-2); font-size: 11px; font-family: var(--f-body); }
+svg text { fill: var(--ink-2); font-size: 13px; font-family: var(--f-body); }
 svg .glab { font-family: var(--f-mono); font-style: italic; fill: var(--ink); }
 .nb { display: grid; gap: 6px; margin-top: 8px; }
 .nb button { display: grid; grid-template-columns: 82px 1fr 42px; align-items: center; gap: 10px; background: none; border: 0; padding: 2px 0;
@@ -208,7 +209,7 @@ function niceMax(v) {
 
 // paired dot plot: rows = [label, measured, predicted]
 function dotPlot(rows, opts = {}) {
-  const W = 620, rowH = opts.rowH || 22, left = opts.left || 92, right = 18, top = 26, bottom = 30;
+  const W = 620, rowH = opts.rowH || 24, left = opts.left || 100, right = 18, top = 28, bottom = 32;
   const H = top + rows.length * rowH + bottom;
   const M = niceMax(Math.max(1e-3, ...rows.flatMap((r) => [Math.abs(r[1]), Math.abs(r[2])])) * 1.05);
   const x = (v) => left + (v + M) / (2 * M) * (W - left - right);
@@ -281,7 +282,7 @@ function render() {
     <section class="panel" aria-labelledby="h-pw">
       <h3 id="h-pw">Hallmark 通路平均变化（实测变化最大的 8 条）</h3>
       <div class="legend"><span class="key"><span class="dot" style="background:var(--measured)"></span>实测</span><span class="key"><span class="dot" style="background:var(--accent)"></span>预测</span></div>
-      <div id="c-pw">${dotPlot(d.pw, { left: 210, mono: false, rowH: 24, aria: "通路平均变化" })}</div>
+      <div id="c-pw">${dotPlot(d.pw, { left: 240, mono: false, rowH: 26, aria: "通路平均变化" })}</div>
     </section>`;
   bindTips($("#c-de"), d.top, (g) => `<span class="gene">${esc(g)}</span>`);
   bindTips($("#c-pw"), d.pw, (g) => esc(g));

@@ -16,11 +16,10 @@ import time
 
 import anndata as ad
 import numpy as np
-import scipy.sparse as sp
-from sklearn.decomposition import PCA
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from vcp.data import CTRL, PerturbData, bh_fdr, ensure_dir, group_mean_var, parse_condition, welch_t  # noqa: E402
+from vcp.data import (CTRL, PerturbData, bh_fdr, ensure_dir, fit_cell_pca, group_mean_var,  # noqa: E402
+                      parse_condition, project_cells, welch_t)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -73,40 +72,19 @@ def main():
         tstat=tstat, fdr=fdr, extra={"target_idx": target_idx},
     )
 
-    # ---- PCA latent space of single cells --------------------------------------------------
-    rng = np.random.default_rng(args.seed)
-    chosen = []
-    for k in range(len(perts) + 1):
-        idx = np.nonzero(labels == k)[0]
-        m = args.pca_ctrl_cells if k == ctrl_label else args.pca_cells_per_pert
-        chosen.append(rng.choice(idx, size=min(m, len(idx)), replace=False))
-    chosen = np.sort(np.concatenate(chosen))
-    rows, chunk = [], 20000
-    for start in range(0, adata.shape[0], chunk):
-        end = min(start + chunk, adata.shape[0])
-        sel = chosen[(chosen >= start) & (chosen < end)] - start
-        if len(sel):
-            rows.append(sp.csr_matrix(adata.X[start:end])[sel].toarray())
-    Xs = np.vstack(rows).astype(np.float32) - ctrl_mean[None]
-    pca = PCA(n_components=args.n_pcs, svd_solver="randomized", random_state=args.seed).fit(Xs)
-    del Xs
-    comps = pca.components_.astype(np.float32)          # (k, G)
-    print(f"  PCA({args.n_pcs}) explained variance: {pca.explained_variance_ratio_.sum():.3f}")
-
-    Z = np.zeros((adata.shape[0], args.n_pcs), dtype=np.float32)
-    offset = (ctrl_mean[None] @ comps.T).astype(np.float32)
-    for start in range(0, adata.shape[0], chunk):
-        end = min(start + chunk, adata.shape[0])
-        xb = sp.csr_matrix(adata.X[start:end])
-        Z[start:end] = np.asarray(xb @ comps.T) - offset
+    # ---- PCA latent space of single cells (all perturbations: deployment model) ------------
+    comps, evr = fit_cell_pca(adata.X, labels, range(len(perts)), ctrl_label, ctrl_mean, n_pcs=args.n_pcs,
+                              per_pert=args.pca_cells_per_pert, n_ctrl=args.pca_ctrl_cells, seed=args.seed)
+    print(f"  PCA({args.n_pcs}) explained variance: {evr.sum():.3f}")
+    Z = project_cells(adata.X, comps, ctrl_mean)
 
     keep = labels >= 0
-    pd_obj.extra["pca_explained_var"] = pca.explained_variance_ratio_.astype(np.float32)
+    pd_obj.extra["pca_explained_var"] = evr
     pd_obj.save(os.path.join(out_dir, f"{args.dataset}_pseudobulk.npz"))
     np.savez_compressed(
         os.path.join(out_dir, f"{args.dataset}_cells.npz"),
         Z=Z[keep], label=labels[keep], ctrl_label=ctrl_label, components=comps,
-        ctrl_mean=ctrl_mean, explained_var=pca.explained_variance_ratio_.astype(np.float32),
+        ctrl_mean=ctrl_mean, explained_var=evr,
         barcodes=np.asarray(adata.obs_names)[keep],
     )
     print(f"  saved to {out_dir} ({time.time() - t0:.0f}s total)")

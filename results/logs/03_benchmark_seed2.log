@@ -1,0 +1,31 @@
+[replogle_k562_essential] P=1092 G=5000 sources=['go', 'ppi', 'genept']
+  fold 0 done (215s)
+  fold 1 done (377s)
+  fold 2 done (521s)
+  fold 3 done (705s)
+  fold 4 done (920s)
+                      pearson_all  pearson_de20  ...  de_overlap20   rank
+model                                            ...                     
+PerturbFormer+KD            0.578         0.750  ...         0.287  0.179
+kNN-concat+KD               0.564         0.742  ...         0.277  0.177
+PerturbNet-attn+KD          0.550         0.740  ...         0.268  0.191
+PerturbNet-concat+KD        0.516         0.726  ...         0.246  0.196
+Linear-concat+KD            0.525         0.691  ...         0.236  0.223
+PerturbFormer               0.570         0.678  ...         0.274  0.193
+kNN-concat                  0.556         0.668  ...         0.263  0.191
+PerturbNet-attn             0.541         0.665  ...         0.255  0.205
+PerturbNet-concat           0.508         0.648  ...         0.233  0.211
+kNN-ppi                     0.525         0.641  ...         0.231  0.243
+kNN-go                      0.528         0.631  ...         0.253  0.211
+Linear-concat               0.516         0.617  ...         0.223  0.239
+Linear-go                   0.520         0.606  ...         0.215  0.269
+kNN-genept                  0.483         0.582  ...         0.230  0.253
+Linear-ppi                  0.488         0.568  ...         0.170  0.373
+Linear-genept               0.471         0.552  ...         0.183  0.323
+Linear-resp                 0.396         0.473  ...         0.110  0.461
+Mean-shift                  0.381         0.463  ...         0.090  0.500
+kNN-resp                    0.390         0.457  ...         0.110  0.456
+No-change                   0.000         0.000  ...         0.013  0.500
+
+[20 rows x 8 columns]
+total 931s

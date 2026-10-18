@@ -156,3 +156,13 @@
 - 预测 Top-50 上调基因富集: [GO] Oxygen Transport (GO:0015671) (q=7.8e-09); [GO] Carbon Dioxide Transport (GO:0015670) (q=1.5e-08); [GO] Gas Transport (GO:0015669) (q=1.5e-08); [GO] One-Carbon Compound Transport (GO:0019755) (q=4.7e-07)
 
 - 实测 Top-50 上调基因富集: [H] IL-2/STAT5 Signaling (q=5.3e-04); [GO] Positive Regulation Of Cytokine Production (GO:0001819) (q=6.6e-04); [GO] Positive Regulation Of Interleukin-6 Production (GO:0032755) (q=6.6e-04); [GO] Positive Regulation Of Response To External Stimulus (GO:0032103) (q=6.6e-04)
+
+## H. DEG 方向预测 (全部显著 DEG, 按真实变化幅度分层)
+| model              |   n_sig_deg |   acc_all_sig |   auroc_up_vs_down |   acc|dlt <0.05 |   acc|dlt 0.05–0.1 |   acc|dlt 0.1–0.2 |   acc|dlt 0.2–0.5 |   acc|dlt >0.5 |
+|:-------------------|------------:|--------------:|-------------------:|----------------:|-------------------:|------------------:|------------------:|---------------:|
+| PerturbFormer+KD   |      672827 |         0.878 |              0.946 |           0.741 |              0.83  |             0.89  |             0.932 |          0.945 |
+| kNN-concat+KD      |      672827 |         0.877 |              0.946 |           0.731 |              0.827 |             0.889 |             0.934 |          0.95  |
+| PerturbNet-attn+KD |      672827 |         0.87  |              0.939 |           0.756 |              0.82  |             0.878 |             0.927 |          0.949 |
+| Linear-concat+KD   |      672827 |         0.857 |              0.93  |           0.707 |              0.809 |             0.868 |             0.915 |          0.938 |
+| Mean-shift         |      672827 |         0.739 |              0.811 |           0.462 |              0.663 |             0.759 |             0.831 |          0.876 |
+幅度分布: <0.05: 5.3%, 0.05–0.1: 27.0%, 0.1–0.2: 40.0%, 0.2–0.5: 25.4%, >0.5: 2.3%

@@ -34,7 +34,7 @@ class VirtualCell:
 
     # ------------------------------------------------------------------------------------
     @classmethod
-    def load(cls, model_dir: str, gmt: str | None = None):
+    def load(cls, model_dir: str, gmt: str | None = None, reliability: str | None = None):
         z = np.load(os.path.join(model_dir, "meta.npz"), allow_pickle=True)
         meta = {k: z[k] for k in z.files}
         with open(os.path.join(model_dir, "config.json")) as fh:
@@ -56,7 +56,37 @@ class VirtualCell:
         if gmt and os.path.exists(gmt):
             from .interpret import read_gmt
             sets = read_gmt(gmt, universe=meta["genes"])
-        return cls(meta, formers, flow, universe, sets)
+        vc = cls(meta, formers, flow, universe, sets)
+        rel = reliability or os.path.join(model_dir, "reliability.json")
+        vc.calib = json.load(open(rel)) if os.path.exists(rel) else None
+        return vc
+
+    # ------------------------------------------------------------------------------------
+    def _prior(self, genes):
+        """Concatenated, per-source L2-normalised GO/PPI/GenePT embedding (same as the CV analysis)."""
+        f, _ = self._features(genes)
+        parts = []
+        for s_ in self.sources:
+            E = f[s_]
+            n = np.linalg.norm(E, axis=1, keepdims=True)
+            parts.append(np.where(n > 0, E / np.maximum(n, 1e-12), 0))
+        E = np.concatenate(parts, 1)
+        return E / np.maximum(np.linalg.norm(E, axis=1, keepdims=True), 1e-12)
+
+    def reliability(self, gene: str, exclude_self: bool = True) -> dict | None:
+        """How similar is `gene` to the measured perturbations?  Calibrated on 5-fold CV:
+        in the tertile of lowest similarity, predictions were clearly worse (see report 6.6)."""
+        if getattr(self, "calib", None) is None:
+            return None
+        if not hasattr(self, "_mem_prior"):
+            self._mem_prior = self._prior(self.perts)
+        sims = self._mem_prior @ self._prior([gene])[0]
+        if exclude_self and gene in self.perts:
+            sims[self.perts.index(gene)] = -np.inf
+        j = int(np.argmax(sims))
+        k = int(np.digitize(sims[j], self.calib["edges"]))
+        return {"max_sim": float(sims[j]), "nearest": self.perts[j], "tier": ["低", "中", "高"][k],
+                "cv_pearson_sys": self.calib["mean_pearson_sys"][k], "cv_pearson_de20": self.calib["mean_pearson_de20"][k]}
 
     # ------------------------------------------------------------------------------------
     def _features(self, genes):
@@ -157,6 +187,10 @@ class VirtualCell:
                                                   "严格的未见基因评估见 5 折交叉验证结果" if seen else "否 (全新基因)"))
         if out["target_idx"] >= 0:
             lines.append(f"- 靶基因 {g} 预测变化: {d[out['target_idx']]:+.3f} (log 表达)")
+        rel = self.reliability(g, exclude_self=True)
+        if rel is not None:
+            lines.append(f"- 预测可靠性: {rel['tier']} (与已测扰动的最大先验相似度 {rel['max_sim']:.2f}, 最相似: {rel['nearest']}; "
+                         f"交叉验证中同档基因的平均去偏 Pearson {rel['cv_pearson_sys']:.2f}, Top-20 DEG Pearson {rel['cv_pearson_de20']:.2f})")
         lines.append("- 依据的相似扰动 (注意力权重): " + ", ".join(f"{n} {w:.2f}" for n, w in out["neighbors"][:6]))
         lines.append("- 知识来源权重: " + ", ".join(f"{k_}={v:.2f}" for k_, v in out["source_weights"].items()))
         dn = np.argsort(d)[:k]

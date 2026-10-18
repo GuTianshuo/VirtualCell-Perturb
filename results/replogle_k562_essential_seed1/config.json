@@ -1,0 +1,10 @@
+{
+  "dataset": "replogle_k562_essential",
+  "folds": 5,
+  "seed": 1,
+  "models": "Linear,kNN,PerturbFormer,PerturbNet",
+  "n_ens": 3,
+  "epochs": 300,
+  "tag": "_seed1",
+  "dev": false
+}

@@ -11,3 +11,4 @@ seaborn==0.13.2
 statsmodels==0.15.0
 tabulate==0.10.0
 torch>=2.2  # CPU build is enough: pip install torch --index-url https://download.pytorch.org/whl/cpu
+pytest>=8  # tests only

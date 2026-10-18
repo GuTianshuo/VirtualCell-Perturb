@@ -56,7 +56,8 @@ def main():
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
-    vc = VirtualCell.load(args.model, gmt=os.path.join(ROOT, "data", "raw", "genesets", "MSigDB_Hallmark_2020.gmt"))
+    vc = VirtualCell.load(args.model, gmt=os.path.join(ROOT, "data", "raw", "genesets", "MSigDB_Hallmark_2020.gmt"),
+                          reliability=os.path.join(ROOT, "results", "interpretation", "reliability.json"))
     if not vc.known_gene(args.gene):
         sys.exit(f"{args.gene}: no prior knowledge (GO/STRING/GenePT) available - cannot encode this perturbation")
     cells = None
@@ -79,6 +80,8 @@ def main():
         import anndata as ad
         a = ad.AnnData(X=out["cells"].astype(np.float32))
         a.var_names = vc.genes
+        a.var["gene_symbol"] = vc.genes          # original symbols (TBCE occurs twice in the dataset)
+        a.var_names_make_unique()
         a.obsm["X_pca"] = out["z_pred"]
         a.obsm["X_pca_control"] = out["z_control"]
         a.uns["perturbation"] = args.gene
