@@ -17,8 +17,11 @@ for SEED in 1 2; do                                      # robustness to the ran
       --n_ens 3 --seed $SEED --tag _seed$SEED
 done
 $PY -u scripts/03c_split_robustness.py
+$PY -u scripts/03d_baseline_tuning.py                    # baselines tuned on the same dev split
 $PY -u scripts/03_benchmark.py --dataset adamson --models all --n_ens 3
-$PY -u scripts/05_flow.py                                # fold-specific PCA, leak-free single-cell evaluation
+$PY -u scripts/05_flow.py                                # fold-specific PCA, leak-free; includes borrowed-cells baseline
+# optional, ~1 h each, needs the GEARS extras from requirements.txt; run alone (needs ~4.5 GB RAM):
+# $PY -u scripts/12_gears_baseline.py --cells_per_pert 15 --n_ctrl 1500 --epochs 10
 $PY -u scripts/06_external_validation.py
 $PY -u scripts/07_interpretation.py
 $PY -u scripts/11_representation.py

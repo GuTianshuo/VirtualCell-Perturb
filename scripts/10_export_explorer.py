@@ -62,8 +62,8 @@ def main():
             "kd": None if t_idx[i] < 0 else [r3(Y[i, t_idx[i]]), r3(pred[i, t_idx[i]])],
         })
     rows = []
-    for mdl, lab in [("PerturbFormer+KD", "PerturbFormer（本文）"), ("kNN-concat+KD", "kNN 多源先验"),
-                     ("Linear-concat+KD", "线性基线"), ("PerturbNet-attn+KD", "PerturbNet"), ("Mean-shift", "均值平移")]:
+    for mdl, lab in [("PerturbFormer+KD", "PerturbFormer（本文）"), ("kNN-concat+KD", "kNN 多源先验（默认参数）"),
+                     ("Linear-concat+KD", "线性基线（默认参数）"), ("PerturbNet-attn+KD", "PerturbNet"), ("Mean-shift", "均值平移")]:
         if mdl in summ.index:
             s = summ.loc[mdl]
             rows.append([lab, r3(s.pearson_all), r3(s.pearson_de20), r3(s.pearson_sys), r3(s.dir_acc_de20), r3(s["rank"])])

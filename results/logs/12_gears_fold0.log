@@ -1,0 +1,144 @@
+/workspace/hot/生物医学信息--cs-1783f371/.venv/lib/python3.12/site-packages/torch/jit/_script.py:1491: FutureWarning: `torch.jit.script` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+Found local copy...
+Found local copy...
+These perturbations are not in the GO graph and their perturbation can thus not be predicted
+['C7orf26+ctrl' 'C14orf178+ctrl' 'RPS10-NUDT3+ctrl' 'SEM1+ctrl' 'FAU+ctrl']
+Local copy of pyg dataset is detected. Loading...
+Done!
+{'train': 784, 'val': 87, 'test': 217} (test perts without GO coverage: 2)
+Creating dataloaders....
+Done!
+Found local copy...
+Start Training...
+Epoch 1 Step 1 Train Loss: 0.5302
+Epoch 1 Step 51 Train Loss: 0.6326
+Epoch 1 Step 101 Train Loss: 0.5924
+Epoch 1 Step 151 Train Loss: 0.5826
+Epoch 1 Step 201 Train Loss: 0.6277
+Epoch 1 Step 251 Train Loss: 0.5840
+Epoch 1 Step 301 Train Loss: 0.5205
+Epoch 1 Step 351 Train Loss: 0.5422
+Epoch 1 Step 401 Train Loss: 0.6909
+Epoch 1: Train Overall MSE: 0.0269 Validation Overall MSE: 0.0277. 
+Train Top 20 DE MSE: 0.1884 Validation Top 20 DE MSE: 0.2010. 
+Epoch 2 Step 1 Train Loss: 0.5829
+Epoch 2 Step 51 Train Loss: 0.5468
+Epoch 2 Step 101 Train Loss: 0.6723
+Epoch 2 Step 151 Train Loss: 0.5450
+Epoch 2 Step 201 Train Loss: 0.5554
+Epoch 2 Step 251 Train Loss: 0.5898
+Epoch 2 Step 301 Train Loss: 0.5547
+Epoch 2 Step 351 Train Loss: 0.5568
+Epoch 2 Step 401 Train Loss: 0.5701
+Epoch 2: Train Overall MSE: 0.0262 Validation Overall MSE: 0.0270. 
+Train Top 20 DE MSE: 0.1695 Validation Top 20 DE MSE: 0.1870. 
+Epoch 3 Step 1 Train Loss: 0.6051
+Epoch 3 Step 51 Train Loss: 0.6474
+Epoch 3 Step 101 Train Loss: 0.5401
+Epoch 3 Step 151 Train Loss: 0.5379
+Epoch 3 Step 201 Train Loss: 0.6403
+Epoch 3 Step 251 Train Loss: 0.5937
+Epoch 3 Step 301 Train Loss: 0.5755
+Epoch 3 Step 351 Train Loss: 0.5455
+Epoch 3 Step 401 Train Loss: 0.6506
+Epoch 3: Train Overall MSE: 0.0257 Validation Overall MSE: 0.0270. 
+Train Top 20 DE MSE: 0.1625 Validation Top 20 DE MSE: 0.1876. 
+Epoch 4 Step 1 Train Loss: 0.6169
+Epoch 4 Step 51 Train Loss: 0.5878
+Epoch 4 Step 101 Train Loss: 0.5696
+Epoch 4 Step 151 Train Loss: 0.6358
+Epoch 4 Step 201 Train Loss: 0.5242
+Epoch 4 Step 251 Train Loss: 0.5212
+Epoch 4 Step 301 Train Loss: 0.5244
+Epoch 4 Step 351 Train Loss: 0.6088
+Epoch 4 Step 401 Train Loss: 0.5684
+Epoch 4: Train Overall MSE: 0.0254 Validation Overall MSE: 0.0266. 
+Train Top 20 DE MSE: 0.1523 Validation Top 20 DE MSE: 0.1838. 
+Epoch 5 Step 1 Train Loss: 0.5540
+Epoch 5 Step 51 Train Loss: 0.5920
+Epoch 5 Step 101 Train Loss: 0.5861
+Epoch 5 Step 151 Train Loss: 0.6548
+Epoch 5 Step 201 Train Loss: 0.5968
+Epoch 5 Step 251 Train Loss: 0.5550
+Epoch 5 Step 301 Train Loss: 0.6218
+Epoch 5 Step 351 Train Loss: 0.6002
+Epoch 5 Step 401 Train Loss: 0.5653
+Epoch 5: Train Overall MSE: 0.0252 Validation Overall MSE: 0.0266. 
+Train Top 20 DE MSE: 0.1507 Validation Top 20 DE MSE: 0.1873. 
+Epoch 6 Step 1 Train Loss: 0.5087
+Epoch 6 Step 51 Train Loss: 0.5864
+Epoch 6 Step 101 Train Loss: 0.5642
+Epoch 6 Step 151 Train Loss: 0.5134
+Epoch 6 Step 201 Train Loss: 0.5793
+Epoch 6 Step 251 Train Loss: 0.5675
+Epoch 6 Step 301 Train Loss: 0.5332
+Epoch 6 Step 351 Train Loss: 0.5769
+Epoch 6 Step 401 Train Loss: 0.5598
+Epoch 6: Train Overall MSE: 0.0250 Validation Overall MSE: 0.0266. 
+Train Top 20 DE MSE: 0.1476 Validation Top 20 DE MSE: 0.1849. 
+Epoch 7 Step 1 Train Loss: 0.5581
+Epoch 7 Step 51 Train Loss: 0.5722
+Epoch 7 Step 101 Train Loss: 0.5715
+Epoch 7 Step 151 Train Loss: 0.5212
+Epoch 7 Step 201 Train Loss: 0.6469
+Epoch 7 Step 251 Train Loss: 0.5966
+Epoch 7 Step 301 Train Loss: 0.5847
+Epoch 7 Step 351 Train Loss: 0.6044
+Epoch 7 Step 401 Train Loss: 0.6042
+Epoch 7: Train Overall MSE: 0.0251 Validation Overall MSE: 0.0267. 
+Train Top 20 DE MSE: 0.1421 Validation Top 20 DE MSE: 0.1805. 
+Epoch 8 Step 1 Train Loss: 0.5817
+Epoch 8 Step 51 Train Loss: 0.5596
+Epoch 8 Step 101 Train Loss: 0.5223
+Epoch 8 Step 151 Train Loss: 0.6152
+Epoch 8 Step 201 Train Loss: 0.5784
+Epoch 8 Step 251 Train Loss: 0.5413
+Epoch 8 Step 301 Train Loss: 0.5466
+Epoch 8 Step 351 Train Loss: 0.5338
+Epoch 8 Step 401 Train Loss: 0.5197
+Epoch 8: Train Overall MSE: 0.0249 Validation Overall MSE: 0.0265. 
+Train Top 20 DE MSE: 0.1469 Validation Top 20 DE MSE: 0.1852. 
+Epoch 9 Step 1 Train Loss: 0.5815
+Epoch 9 Step 51 Train Loss: 0.5380
+Epoch 9 Step 101 Train Loss: 0.5708
+Epoch 9 Step 151 Train Loss: 0.5501
+Epoch 9 Step 201 Train Loss: 0.5257
+Epoch 9 Step 251 Train Loss: 0.4815
+Epoch 9 Step 301 Train Loss: 0.6027
+Epoch 9 Step 351 Train Loss: 0.6696
+Epoch 9 Step 401 Train Loss: 0.5345
+Epoch 9: Train Overall MSE: 0.0250 Validation Overall MSE: 0.0266. 
+Train Top 20 DE MSE: 0.1421 Validation Top 20 DE MSE: 0.1832. 
+Epoch 10 Step 1 Train Loss: 0.5342
+Epoch 10 Step 51 Train Loss: 0.5854
+Epoch 10 Step 101 Train Loss: 0.5895
+Epoch 10 Step 151 Train Loss: 0.5342
+Epoch 10 Step 201 Train Loss: 0.5648
+Epoch 10 Step 251 Train Loss: 0.5959
+Epoch 10 Step 301 Train Loss: 0.5729
+Epoch 10 Step 351 Train Loss: 0.5916
+Epoch 10 Step 401 Train Loss: 0.5475
+Epoch 10: Train Overall MSE: 0.0250 Validation Overall MSE: 0.0266. 
+Train Top 20 DE MSE: 0.1431 Validation Top 20 DE MSE: 0.1825. 
+Done!
+Start Testing...
+Best performing model: Test Top 20 DE MSE: 0.1585
+Done!
+GEARS trained: 10 epochs in 3150s
+## GEARS（已发表方法）与本项目模型对比：第 0 折，217 个未见基因
+
+GEARS 设置：每个扰动 15 个细胞 + 1500 个对照细胞，10 个 epoch，其余为默认参数；训练用时 53 分钟（4 核 CPU）。
+
+| 模型 | pearson_all | pearson_de20 | pearson_sys | dir_acc_de20 | de_overlap20 | rank |
+|---|---|---|---|---|---|---|
+| Mean-shift | 0.385 | 0.502 | 0.000 | 0.667 | 0.082 | 0.498 |
+| Linear-concat+KD | 0.541 | 0.703 | 0.451 | 0.801 | 0.262 | 0.203 |
+| PerturbNet-attn+KD | 0.568 | 0.750 | 0.473 | 0.861 | 0.280 | 0.177 |
+| kNN-concat+KD | 0.582 | 0.757 | 0.492 | 0.835 | 0.290 | 0.168 |
+| GEARS | 0.375 | 0.541 | 0.232 | 0.693 | 0.108 | 0.340 |
+| GEARS+KD | 0.387 | 0.608 | 0.249 | 0.702 | 0.124 | 0.321 |
+| PerturbFormer+KD | 0.597 | 0.770 | 0.504 | 0.849 | 0.311 | 0.155 |
+
+PerturbFormer+KD 减去 GEARS+KD（配对 Wilcoxon）：pearson_all +0.210 (p=3e-32)；pearson_de20 +0.162 (p=2e-21)；pearson_sys +0.255 (p=1e-26)；dir_acc_de20 +0.147 (p=3e-22)；de_overlap20 +0.188 (p=5e-26)；rank -0.165 (p=1e-23)
+total 3409s

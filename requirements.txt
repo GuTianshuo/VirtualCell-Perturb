@@ -1,14 +1,23 @@
-anndata==0.13.4
-h5py==3.16.0
-matplotlib==3.11.2
+# core pipeline (python 3.12, CPU only)
+# torch: pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2
 numpy==2.5.4
 pandas==3.0.6
-python-pptx==1.0.2
-scanpy==1.12.4
-scikit-learn==1.9.1
 scipy==1.18.1
-seaborn==0.13.2
+scikit-learn==1.9.1
+anndata==0.13.4
+h5py==3.16.0
 statsmodels==0.15.0
+umap-learn==0.5.12
+matplotlib==3.11.2
+pillow==13.0.0
 tabulate==0.10.0
-torch>=2.2  # CPU build is enough: pip install torch --index-url https://download.pytorch.org/whl/cpu
-pytest>=8  # tests only
+python-pptx==1.0.2
+
+# tests
+pytest>=8
+
+# optional: published baseline GEARS (scripts/12_gears_baseline.py); install cell-gears with --no-deps
+#   pip install --no-deps cell-gears==0.1.2 && pip install torch_geometric==2.8.1 dcor==0.7 scanpy==1.12.4
+# optional: report PDF (docs/build_report_pdf.py)
+#   pip install markdown==3.11.1 playwright && python -m playwright install chromium

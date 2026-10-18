@@ -10,7 +10,7 @@
 
 ## 主要结果
 
-**评测设定**：Replogle 2022 K562 必需基因 CRISPRi 筛选，按基因做 5 折交叉验证，1,092 个基因每个都作为**训练时完全未见**的基因被预测一次。超参数只在开发集上选择，测试折从未参与调参。
+**评测设定**：Replogle 2022 K562 必需基因 CRISPRi 筛选，按基因做 5 折交叉验证，1,092 个基因每个都作为**训练时完全未见**的基因被预测一次。模型设计和超参数只在开发集上比较，基线也经过同等调参；第 0 折的 219 个测试基因从未参与任何设计选择，在这一折上结论同样成立（报告第 8 节）。
 
 | 模型 | Pearson Δ 全部基因 | Pearson Δ Top-20 DEG | 去偏 Pearson (Systema) | DEG 方向准确率 | 识别排名 ↓ |
 |---|---|---|---|---|---|
@@ -22,10 +22,11 @@
 | *测量噪声决定的可达上限* | 0.813 | 0.900 | 0.808 | — | — |
 
 - 均值平移的全基因相关看似不差，但**去偏 Pearson 为 0**：它不含任何扰动特异信息。
-- PerturbFormer 在全部 7 项指标上显著优于线性基线（配对 Wilcoxon p < 1e-21）；相对多源 kNN 小幅但稳定领先：换 3 种随机划分重复，18 次配对比较中 15 次显著领先、1 次落后。核心收益来自**多源知识检索**这一思路。
+- 上表为第一种划分、基线使用默认参数。**基线在同一开发集上调参并换 3 种随机划分后**：PerturbFormer 仍在全部指标上显著优于线性基线（去偏 Pearson +0.027）；与调参后的多源 kNN 在三项 Pearson 上持平（差 ≤ 0.004），但 DEG 方向准确率（+0.010）、Top-20 DEG 重合率（+0.015）和扰动识别排名在 3 种划分中都显著更好（18 次比较 15 优 1 平 2 劣）。核心收益来自**多源知识检索**这一思路。
+- **已发表方法 GEARS**（同样的未见基因，第 0 折）：去偏 Pearson 0.25，PerturbFormer 0.50。受 CPU 限制 GEARS 只用了少量细胞和 10 个 epoch，不代表其最佳性能，但方向与 Ahlmann-Eltze 2025 的独立评测一致。
 - 消融：去掉 GO（−0.029）、GenePT 语言模型嵌入（−0.024）、知识核注意力（−0.021）、STRING PPI（−0.020）都会显著下降；CRISPRi 敲低规则使 Top-20 DEG 相关提升 0.072。
 - **DEG 方向**：全部约 67 万个显著 DEG 上方向准确率 87.8%（AUROC 0.946），变化幅度 > 0.2 的 DEG 达 93% 以上；错误集中在接近噪声的弱变化基因。
-- **单细胞（条件流匹配）**：相对只平移均值，能量距离 −7%、MMD −17%、方差误差 −17%（p < 1e-31）；能复现敲低后的细胞异质性。潜空间每折只用训练细胞拟合。
+- **单细胞（条件流匹配）**：相对只平移均值，能量距离 −7%、MMD −17%、方差误差 −17%（p < 1e-30）；但与免训练的“借用相似扰动细胞”基线持平（差异不显著）。流模型独有的是逐细胞反事实映射。潜空间每折只用训练细胞拟合。
 - **第二个数据集**（Adamson 2016，86 个扰动，同样的未见基因评测）：PerturbFormer 在所有指标上最优，去偏 Pearson 0.544（kNN 0.498，线性 0.476）。
 - **跨实验室外部验证**（Replogle → Adamson，全部为未见基因）：达到"直接重测同一基因"上限的 79–86%。
 - **生物学解释**：预测保留 CORUM 复合体与 Hallmark 通路结构（通路相关 r = 0.59）；核糖体、蛋白酶体、Mediator 等复合体成员最可预测；GATA1 这类谱系特异的主调控因子是明确的失败边界。
@@ -47,9 +48,9 @@
 | 扰动编码 | 四种知识 token：GO、PPI、GenePT、应答谱（3.1 节，`src/vcp/embeddings.py`） |
 | 表达变化预测 | 基础版：Linear / kNN / PerturbNet；本文 PerturbFormer（3.2–3.3 节，`src/vcp/models.py`） |
 | DEG 方向预测 | 方向损失 + Top-20 / 全部 DEG 方向准确率分层分析（5.7 节） |
-| 高级版本：生成模型 / flow / Transformer | 条件流匹配（OT-CFM）生成单细胞；PerturbFormer 本身是 Transformer（3.4 节，`src/vcp/flow.py`） |
+| 高级版本：生成模型 / flow / Transformer | 条件流匹配（OT-CFM）生成单细胞，并与“借用相似扰动细胞”的强基线对比；PerturbFormer 本身是 Transformer（3.4、5.4 节，`src/vcp/flow.py`） |
 | 最终成果：输入"细胞 + 基因"，输出扰动后状态 | `scripts/predict.py`、`VirtualCell.predict()`（第 7 节） |
-| Benchmark 评测 | 5 折未见基因 CV × 3 种划分、噪声上限、配对检验、消融、外部实验室验证（第 4–5 节） |
+| Benchmark 评测 | 5 折未见基因 CV × 3 种划分、基线同等调参、已发表方法 GEARS 对比、噪声上限、配对检验、消融、外部实验室验证（第 4–5 节） |
 | Biological interpretation 解释 | 复合体、通路、案例、知识源权重、失败模式（第 6 节） |
 | GitHub 代码 + 10 分钟汇报 | 本仓库；`docs/VirtualCell-Perturb_汇报.pptx`（16 页，讲稿约 9 分钟） |
 
@@ -87,14 +88,16 @@ VirtualCell-Perturb/
 │   ├── 03_benchmark.py           # 5 折未见扰动评测（全部模型 + 消融）
 │   ├── 03b_dev_sweep.py          # 仅在开发集上的超参数扫描
 │   ├── 03c_split_robustness.py   # 3 种随机划分下的稳健性汇总
+│   ├── 03d_baseline_tuning.py    # 基线在同一开发集上调参后重新评估
 │   ├── 04_noise_ceiling.py       # 细胞拆半噪声天花板
-│   ├── 05_flow.py                # 条件流匹配训练与单细胞评测
+│   ├── 05_flow.py                # 条件流匹配训练与单细胞评测（含“借用细胞”基线、--dev 开发模式）
 │   ├── 06_external_validation.py # Replogle → Adamson 跨实验室验证
 │   ├── 07_interpretation.py      # 生物学解释
 │   ├── 08_train_final.py         # 用全部扰动训练可部署模型
 │   ├── 09_figures.py             # 评测图表与统计检验
 │   ├── 10_export_explorer.py     # 交互式网页
 │   ├── 11_representation.py      # 细胞与扰动的表征分析
+│   ├── 12_gears_baseline.py      # 已发表方法 GEARS 对比（可选）
 │   └── predict.py                # 命令行：细胞 + 基因 → 扰动后状态
 ├── results/                      # 指标表（csv / md）
 ├── figures/                      # 全部图

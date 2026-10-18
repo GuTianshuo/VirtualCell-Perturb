@@ -1,6 +1,5 @@
 # data & large artefacts (re-created by scripts/00_download_data.sh and the pipeline)
-data/raw/
-data/processed/
+data/
 models/
 results/**/*.npz
 results/**/*.pt

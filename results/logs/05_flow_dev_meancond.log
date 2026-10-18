@@ -1,0 +1,26 @@
+[fold 0] PCA on training cells: explained var 0.155 (26s)
+[fold 0] PerturbFormer done (71s)
+    flow step 2000/8000  loss 1.2064
+    flow step 4000/8000  loss 1.1482
+    flow step 6000/8000  loss 1.1083
+    flow step 8000/8000  loss 1.0937
+[fold 0] flow trained (339s)
+[fold 0] evaluated 87 unseen perturbations (366s)
+                    energy_distance          ... logvar_err_top20pc        
+                               mean  median  ...               mean  median
+model                                        ...                           
+Borrowed-cells               0.9656  0.6179  ...             0.2138  0.1905
+CFM (ours)                   0.9638  0.6231  ...             0.2111  0.1918
+Mean-shift                   1.8563  1.4033  ...             0.2621  0.2430
+No-change                    2.2377  1.5013  ...             0.2621  0.2430
+Oracle-shift                 0.2185  0.1827  ...             0.2621  0.2430
+PerturbFormer-shift          1.1000  0.7774  ...             0.2621  0.2430
+
+[6 rows x 6 columns]
+                     pearson_all  pearson_de20  ...  de_overlap20   rank
+model                                           ...                     
+PerturbFormer-shift        0.633         0.808  ...         0.312  0.160
+CFM (ours)                 0.618         0.792  ...         0.310  0.151
+
+[2 rows x 9 columns]
+total 366s

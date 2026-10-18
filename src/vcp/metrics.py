@@ -93,3 +93,17 @@ def mmd_rbf(x: np.ndarray, y: np.ndarray, gammas=(0.5, 0.1, 0.05, 0.01, 0.005)) 
     for g in gammas:
         tot += k(x, x, g).mean() + k(y, y, g).mean() - 2 * k(x, y, g).mean()
     return float(tot / len(gammas))
+
+
+def mmd_median(x: np.ndarray, y: np.ndarray) -> float:
+    """RBF-MMD² with bandwidths at {0.5, 1, 2} x the median pairwise squared distance of y."""
+    def sq(a, b):
+        return np.maximum((a * a).sum(1)[:, None] + (b * b).sum(1)[None] - 2 * a @ b.T, 0)
+    dyy = sq(y, y)
+    med = np.median(dyy[np.triu_indices(len(y), 1)])
+    dxx, dxy = sq(x, x), sq(x, y)
+    tot = 0.0
+    for m in (0.5, 1.0, 2.0):
+        g = 1.0 / (m * med)
+        tot += np.exp(-g * dxx).mean() + np.exp(-g * dyy).mean() - 2 * np.exp(-g * dxy).mean()
+    return float(tot / 3)

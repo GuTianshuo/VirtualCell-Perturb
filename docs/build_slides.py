@@ -457,7 +457,7 @@ def build():
     rng_de = sw.pearson_de20.max() - sw.pearson_de20.min()
     rng_sys = sw.pearson_sys.max() - sw.pearson_sys.min()
     text(s, 0.8, 5.42, 5.25, 1.1, [[("开发集 / 测试集严格分离：", {"bold": True, "color": BLUE}),
-                                    (f"所有设计与超参数只在 fold 0 训练基因内部划出的开发集上选择，5 个测试折从未用于调参。"
+                                    (f"模型设计与超参数只在开发集上比较，基线同等调参；第 0 折的 219 个基因完全未参与设计，在这一折上优势反而更大。"
                                      f"{len(sw)} 组超参数的结果极差：DE20 {rng_de:.3f}、去偏 {rng_sys:.3f}，模型对超参数不敏感。", {})]],
          size=12.5, line=1.15)
     mets = [("Pearson Δ (全部 / Top-20 DEG)", "GEARS 标准指标"), ("DEG 方向准确率", "上调 / 下调是否预测正确"),
@@ -470,19 +470,26 @@ def build():
         text(s, 6.9, y, 2.95, 0.64, [a], size=13, bold=True, anchor=MSO_ANCHOR.MIDDLE)
         text(s, 9.85, y, 2.85, 0.64, [b_], size=11.5, color=TEXT2, anchor=MSO_ANCHOR.MIDDLE, line=1.0)
     footer(s, n)
-    notes(s, "评测设计：按基因五折划分，每折 20% 的基因完全不进训练，每个基因恰好被预测一次；超参数只在开发集上选，测试折不参与调参" + ("；还换了多种随机划分重复。" if nsplit > 1 else "。")
+    notes(s, "评测设计：按基因五折划分，每折 20% 的基因完全不进训练，每个基因恰好被预测一次；设计和超参数只在开发集上比较，基线也同等调参，第 0 折的基因完全没参与设计" + ("；还换了多种随机划分重复。" if nsplit > 1 else "。")
              + "指标不只看相关性：去偏 Pearson 下平凡基线恒为 0；另有 DEG 方向、识别排名、单细胞分布距离、噪声上限和配对检验。")
 
     # 7 ---------------------------------------------------------------- main results (native chart)
     s = new()
-    title(s, "主结果：知识检索大幅超越文献基线", "评测")
-    models = [(MS, "均值平移", "8A929B"), (LIN, "线性基线 (Ahlmann-Eltze)", AQUA), (NET, "PerturbNet (MLP/Transformer)", YELLOW),
-              (KNN, "kNN 多源先验", ORANGE), (PF, "PerturbFormer (本文)", BLUE)]
+    title(s, "主结果：知识检索稳定优于文献基线", "评测")
+    # 3-split averages; Linear and kNN tuned on the development split (03d_baseline_tuning.py)
+    sr = R["splits"].groupby("model").mean(numeric_only=True)
+    tb = pd.read_csv(os.path.join(RES, "baseline_tuned_vs_pf.csv")).groupby(["baseline", "metric"]).baseline_value.mean()
+    tbd = pd.read_csv(os.path.join(RES, "baseline_tuned_vs_pf.csv")).groupby(["baseline", "metric"])["diff"].mean()
+    AV = {MS: sr.loc[MS], NET: sr.loc[NET], PF: sr.loc[PF],
+          LIN: pd.Series({k: tb.loc[("Linear", k)] for k in ("pearson_all", "pearson_de20", "pearson_sys", "dir_acc_de20")}),
+          KNN: pd.Series({k: tb.loc[("kNN", k)] for k in ("pearson_all", "pearson_de20", "pearson_sys", "dir_acc_de20")})}
+    models = [(MS, "均值平移", "8A929B"), (LIN, "线性基线 (调参后)", AQUA), (NET, "PerturbNet (MLP/Transformer)", YELLOW),
+              (KNN, "kNN 多源先验 (调参后)", ORANGE), (PF, "PerturbFormer (本文)", BLUE)]
     cats = [("pearson_all", "Pearson Δ\n全部基因"), ("pearson_de20", "Pearson Δ\nTop-20 DEG"), ("pearson_sys", "去偏 Pearson\n(Systema)"), ("dir_acc_de20", "DEG 方向\n准确率")]
     cd = CategoryChartData()
     cd.categories = [c for _, c in cats]
     for m, lab, _ in models:
-        cd.add_series(lab, [round(float(S.loc[m, k]), 3) for k, _ in cats])
+        cd.add_series(lab, [round(float(AV[m][k]), 3) for k, _ in cats])
     gf = s.shapes.add_chart(XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(0.5), Inches(1.4), Inches(8.3), Inches(5.3), cd)
     ch = gf.chart
     ch.has_legend = True
@@ -553,18 +560,26 @@ def build():
                     t += 1
         return w, t, l, nspl
     vs = verdict_splits(KNN)
-    stat(s, 9.2, 1.45, 3.6, f"+{pf.pearson_sys - S.loc[LIN, 'pearson_sys']:.3f}",
-         f"去偏 Pearson 超过线性基线（{S.loc[LIN, 'pearson_sys']:.3f} → {pf.pearson_sys:.3f}），6 项指标中 {b_lin[0]} 项显著更好")
-    stat(s, 9.2, 2.95, 3.6, f"{pf.pearson_sys / nc['pearson_sys_pred_ceiling']:.0%}",
+    tv = pd.read_csv(os.path.join(RES, "baseline_tuned_vs_pf.csv"))
+    tk = tv[tv.baseline == "kNN"]
+    vt = (((tk.p < 0.05) & ((tk["diff"] > 0) ^ (tk.metric == "rank"))).sum(), ((tk.p >= 0.05)).sum(),
+          ((tk.p < 0.05) & ((tk["diff"] < 0) ^ (tk.metric == "rank"))).sum())
+    stat(s, 9.2, 1.45, 3.6, f"+{tbd.loc[('Linear', 'pearson_sys')]:.3f}",
+         f"去偏 Pearson 超过调参后的线性基线；{len(tv[tv.baseline == 'Linear'])} 次配对比较全部显著更好")
+    stat(s, 9.2, 2.95, 3.6, f"{AV[PF]['pearson_sys'] / nc['pearson_sys_pred_ceiling']:.0%}",
          f"达到测量噪声决定的可达上限（去偏 {nc['pearson_sys_pred_ceiling']:.2f}）；均值平移为 0")
-    stat(s, 9.2, 4.45, 3.6, f"{vs[0]} 优 · {vs[1]} 平 · {vs[2]} 劣",
-         f"对比 kNN 多源先验：{vs[3]} 种随机划分 × 6 项指标的配对检验。差距小，但稳定领先", vsize=24)
-    text(s, 9.2, 5.85, 3.6, 0.9, ["配对 Wilcoxon 检验，每种划分 n = 1,092 个未见基因（5 折 out-of-fold）"], size=11, color=MUTED)
-    footer(s, n, "完整表格与 95% CI：results/replogle_k562_essential/main_table.md")
-    sp_txt = f"；把五折划分换 {vs[3]} 种随机种子重做，{vs[3] * 6} 次比较中 {vs[0]} 次显著领先、{vs[2]} 次略逊" if vs[3] > 1 else ""
-    notes(s, f"主结果。灰色的均值平移全基因相关 {S.loc[MS, 'pearson_all']:.2f}，看起来不差，但去偏 Pearson 为 0，没有任何扰动特异信息。线性基线和深度模型都好于它，知识检索的两个模型又更好："
-             f"PerturbFormer 去偏 Pearson {pf.pearson_sys:.3f}，比线性基线高 {pf.pearson_sys - S.loc[LIN, 'pearson_sys']:.3f}，达到噪声上限的 {pf.pearson_sys / nc['pearson_sys_pred_ceiling']:.0%}。"
-             f"如实说明：它和多源 kNN 差距很小{sp_txt}。真正起作用的是多源知识检索这个思路，PerturbFormer 带来稳定的小幅提升和可解释性。")
+    stat(s, 9.2, 4.45, 3.6, f"{vt[0]} 优 · {vt[1]} 平 · {vt[2]} 劣",
+         f"对比调参后的 kNN：相关性持平；DEG 方向、DEG 重合、识别排名在 3 种划分中都更好", vsize=24)
+    gp_ = os.path.join(RES, "gears_fold0_seed0.csv")
+    if os.path.exists(gp_):
+        gg_ = pd.read_csv(gp_).groupby("model").pearson_sys.mean()
+        text(s, 9.2, 5.75, 3.6, 1.0, [f"已发表方法 GEARS（第 0 折，受 CPU 限制少量训练）：去偏 Pearson {gg_['GEARS+KD']:.2f}；"
+                                      "3 种划分平均，配对 Wilcoxon"], size=11, color=MUTED, line=1.05)
+    else:
+        text(s, 9.2, 5.85, 3.6, 0.9, ["3 种随机划分平均；配对 Wilcoxon，每种划分 n = 1,092 个未见基因"], size=11, color=MUTED)
+    footer(s, n, "完整表格：results/replogle_k562_essential/{main_table, split_robustness, baseline_tuned_vs_pf}.md")
+    notes(s, f"主结果是三种划分的平均，基线都做了同等调参。均值平移的去偏 Pearson 为 0，没有扰动特异信息。知识检索的模型明显好于线性和深度基线，PerturbFormer 去偏 Pearson {AV[PF]['pearson_sys']:.3f}，"
+             f"比调参后的线性基线高 {tbd.loc[('Linear', 'pearson_sys')]:.3f}。如实说明：调参后的 kNN 在相关性上和它持平，PerturbFormer 稳定更好的是 DEG 方向、重合度和可识别性。已发表的 GEARS 明显更差，但它训练不足，只作参考。")
 
     # 8 ---------------------------------------------------------------- priors & ablation (native charts)
     s = new()
@@ -675,13 +690,17 @@ def build():
         stat(s, 2.4, 4.85, 1.7, f"{(v_cfm / v_sh - 1):+.0%}", "方差误差 (vs 仅平移均值)", vsize=30)
         from scipy.stats import wilcoxon as _w
         pval = _w(pv["CFM (ours)"], pv["PerturbFormer-shift"]).pvalue
-        stat(s, 4.2, 4.85, 1.7, f"{win:.0%}", f"未见扰动上更好 (p={pval:.0e})", vsize=30)
-        flow_note = (f"能量距离 {e_sh:.2f} → {e_cfm:.2f}，方差误差 {v_sh:.3f} → {v_cfm:.3f}；而使用真实均值的 Oracle 平移能量距离为 {e_or:.2f}，"
-                     "说明剩余误差主要来自对未见基因平均效应的预测，而不是分布形状。")
+        if "Borrowed-cells" in set(fl.model):
+            e_b = g.loc["Borrowed-cells", "energy_distance"]
+            pb_ = _w(pv["CFM (ours)"], pv["Borrowed-cells"]).pvalue
+            stat(s, 4.2, 4.85, 1.7, "≈", f"借用相似扰动细胞 ({e_b:.2f} vs {e_cfm:.2f}, p={pb_:.1g})", vsize=30, color=ORANGE)
+        else:
+            stat(s, 4.2, 4.85, 1.7, f"{win:.0%}", f"未见扰动上更好 (p={pval:.0e})", vsize=30)
+        flow_note = (f"能量距离 {e_sh:.2f} 降到 {e_cfm:.2f}，方差误差也明显下降。但如实说明：直接借用最相似扰动的真实细胞，分布指标和流模型持平；"
+                     "流模型独有的是逐细胞映射，给定一个细胞能算出它自己的反事实状态。")
     picture(s, os.path.join(FIG, "fig7_flow_slide.png"), 6.2, 1.3, w=6.65, h=5.6)
     footer(s, n)
-    notes(s, "高级版本是条件流匹配：在 PCA 潜空间学一个速度场，把对照细胞连续推到扰动后的分布；训练用最优传输配对，条件来自 PerturbFormer 的预测，所以也能处理未见基因。"
-             "潜空间每折只用训练细胞拟合。" + flow_note)
+    notes(s, "高级版本是条件流匹配：在 PCA 潜空间学一个速度场，把对照细胞连续推到扰动后的分布，条件来自 PerturbFormer 的预测，所以也能处理未见基因。相对只平移均值，" + flow_note)
 
     # 10 --------------------------------------------------------------- external
     s = new()
@@ -820,14 +839,14 @@ def build():
     text(s, 0.75, 0.6, 11.5, 0.8, ["结论与展望"], size=34, bold=True, color=WHITE)
     concl = [("问题", "把“敲低一个新基因会怎样”形式化为未见扰动泛化，并正视系统偏差与测量噪声"),
              ("模型", "多源知识检索：PerturbFormer 在已测扰动上做知识核交叉注意力；条件流匹配把预测展开到单细胞"),
-             ("评测", f"1,092 个未见基因：去偏 Pearson {pf.pearson_sys:.3f}，显著高于线性基线 {S.loc[LIN, 'pearson_sys']:.3f} 与深度基线，小幅优于多源 kNN（Adamson 数据集内优势更明显）；跨实验室验证成立"),
+             ("评测", f"3 种划分、基线同等调参：显著优于线性与深度基线；与多源 kNN 相关性持平、DEG 方向与可识别性更好；跨实验室验证成立"),
              ("解释", "预测保留复合体与通路结构，每个预测可追溯到它参考的已测实验；谱系主调控因子是明确的失败边界")]
     for i, (a, b_) in enumerate(concl):
         y = 1.65 + i * 0.95
         circle_label(s, 0.75, y, 0.55, a[0], fill=BLUE, size=15)
         text(s, 1.55, y - 0.04, 11.0, 0.7, [[(a + "　", {"bold": True, "color": WHITE}), (b_, {"color": "D6E2EC"})]], size=15.5,
              anchor=MSO_ANCHOR.MIDDLE, line=1.05)
-    text(s, 0.75, 5.6, 5.7, 1.4, [[("局限", {"bold": True, "color": "F2A27E"})], "单一细胞系；只做单基因敲低；跨实验室批次差异仍大；PCA 潜空间限制单细胞细节"],
+    text(s, 0.75, 5.6, 5.7, 1.4, [[("局限", {"bold": True, "color": "F2A27E"})], "单一细胞系、只做单基因敲低；单细胞分布上流模型与“借用相似扰动细胞”持平；跨实验室差异仍大"],
          size=13.5, color="D6E2EC", after=4, line=1.12)
     text(s, 6.8, 5.6, 5.8, 1.4, [[("展望", {"bold": True, "color": "7FB2F0"})], "跨细胞系迁移 (K562 → RPE1)；组合扰动；用不确定性驱动主动学习选择下一轮实验"],
          size=13.5, color="D6E2EC", after=4, line=1.12)

@@ -123,7 +123,7 @@ svg .glab { font-family: var(--f-mono); font-style: italic; fill: var(--ink); }
   <section class="panel" aria-labelledby="bench-h">
     <h3 id="bench-h">基准测试 · 1,092 个未见基因的平均值</h3>
     <div class="tbl-wrap"><table id="bench"></table></div>
-    <p class="note">Δ = 扰动细胞平均表达 − 对照细胞平均表达（log 归一化）。去偏 Pearson 先减去训练集平均扰动响应再计算相关（Systema），均值平移基线在该指标上恒为 0。识别排名：用预测去匹配所有真实扰动时真实扰动的排名，0 为完美，0.5 为随机。可达上限：把每个扰动的细胞随机拆成两半估计测量信度，完美预测真实效应时与实测值的相关上限为 √信度。</p>
+    <p class="note">Δ = 扰动细胞平均表达 − 对照细胞平均表达（log 归一化）。去偏 Pearson 先减去训练集平均扰动响应再计算相关（Systema），均值平移基线在该指标上恒为 0。识别排名：用预测去匹配所有真实扰动时真实扰动的排名，0 为完美，0.5 为随机。表中基线为默认参数、第一种划分；基线在开发集上调参并换 3 种划分后，kNN 与 PerturbFormer 在三项 Pearson 上持平，PerturbFormer 在 DEG 方向、重合与识别排名上更好（见报告 5.1c）。可达上限：把每个扰动的细胞随机拆成两半估计测量信度，完美预测真实效应时与实测值的相关上限为 √信度。</p>
   </section>
 
   <div class="main">

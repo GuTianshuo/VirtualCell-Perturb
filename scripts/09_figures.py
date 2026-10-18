@@ -251,11 +251,12 @@ def main():
     fp = os.path.join(RES, "flow_singlecell_metrics.csv")
     if os.path.exists(fp):
         fl = pd.read_csv(fp)
-        order = ["No-change", "Mean-shift", "PerturbFormer-shift", "CFM (ours)", "Oracle-shift"]
+        order = [o for o in ["No-change", "Mean-shift", "PerturbFormer-shift", "Borrowed-cells", "CFM (ours)", "Oracle-shift"]
+                 if o in set(fl.model)]
         lab = {"No-change": "不变", "Mean-shift": "均值平移", "PerturbFormer-shift": "PerturbFormer 平移",
-               "CFM (ours)": "条件流匹配 (本文)", "Oracle-shift": "Oracle 平移 (真实均值)"}
+               "Borrowed-cells": "借用相似扰动的细胞", "CFM (ours)": "条件流匹配 (本文)", "Oracle-shift": "Oracle 平移 (真实均值)"}
         colm = {"No-change": vp.GRAY_LIGHT, "Mean-shift": vp.MUTED, "PerturbFormer-shift": vp.ORANGE,
-                "CFM (ours)": vp.BLUE, "Oracle-shift": vp.INK2}
+                "Borrowed-cells": vp.AQUA, "CFM (ours)": vp.BLUE, "Oracle-shift": vp.INK2}
         ex_path = os.path.join(RES, "flow_examples.npz")
         ex = np.load(ex_path) if os.path.exists(ex_path) else None
         avail = {k.split("|")[0] for k in ex.files} if ex is not None else set()

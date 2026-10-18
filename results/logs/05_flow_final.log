@@ -1,0 +1,58 @@
+[fold 0] PCA on training cells: explained var 0.155 (29s)
+[fold 0] PerturbFormer done (94s)
+    flow step 2000/8000  loss 1.1905
+    flow step 4000/8000  loss 1.1327
+    flow step 6000/8000  loss 1.1011
+    flow step 8000/8000  loss 1.0858
+[fold 0] flow trained (374s)
+[fold 0] evaluated 219 unseen perturbations (444s)
+[fold 1] PCA on training cells: explained var 0.155 (457s)
+[fold 1] PerturbFormer done (519s)
+    flow step 2000/8000  loss 1.2045
+    flow step 4000/8000  loss 1.1516
+    flow step 6000/8000  loss 1.1121
+    flow step 8000/8000  loss 1.0959
+[fold 1] flow trained (810s)
+[fold 1] evaluated 219 unseen perturbations (879s)
+[fold 2] PCA on training cells: explained var 0.155 (891s)
+[fold 2] PerturbFormer done (991s)
+    flow step 2000/8000  loss 1.1754
+    flow step 4000/8000  loss 1.1192
+    flow step 6000/8000  loss 1.0877
+    flow step 8000/8000  loss 1.0737
+[fold 2] flow trained (1306s)
+[fold 2] evaluated 218 unseen perturbations (1382s)
+[fold 3] PCA on training cells: explained var 0.154 (1396s)
+[fold 3] PerturbFormer done (1464s)
+    flow step 2000/8000  loss 1.2013
+    flow step 4000/8000  loss 1.1504
+    flow step 6000/8000  loss 1.1072
+    flow step 8000/8000  loss 1.0930
+[fold 3] flow trained (1785s)
+[fold 3] evaluated 218 unseen perturbations (1859s)
+[fold 4] PCA on training cells: explained var 0.156 (1873s)
+[fold 4] PerturbFormer done (1939s)
+    flow step 2000/8000  loss 1.2145
+    flow step 4000/8000  loss 1.1573
+    flow step 6000/8000  loss 1.1129
+    flow step 8000/8000  loss 1.0985
+[fold 4] flow trained (2249s)
+[fold 4] evaluated 218 unseen perturbations (2319s)
+                    energy_distance          ... logvar_err_top20pc        
+                               mean  median  ...               mean  median
+model                                        ...                           
+Borrowed-cells               0.9698  0.7099  ...             0.2169  0.2001
+CFM (ours)                   1.0074  0.6936  ...             0.2160  0.1977
+Mean-shift                   1.7346  1.2335  ...             0.2600  0.2284
+No-change                    2.0653  1.4751  ...             0.2600  0.2284
+Oracle-shift                 0.2271  0.1698  ...             0.2600  0.2284
+PerturbFormer-shift          1.0797  0.8279  ...             0.2600  0.2284
+
+[6 rows x 6 columns]
+                     pearson_all  pearson_de20  ...  de_overlap20   rank
+model                                           ...                     
+PerturbFormer-shift        0.567         0.744  ...         0.282  0.187
+CFM (ours)                 0.556         0.738  ...         0.282  0.192
+
+[2 rows x 9 columns]
+total 2320s
