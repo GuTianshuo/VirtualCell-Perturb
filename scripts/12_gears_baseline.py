@@ -121,6 +121,8 @@ def main():
     ap.add_argument("--n_ctrl", type=int, default=3000)
     ap.add_argument("--epochs", type=int, default=15)
     ap.add_argument("--max_batches", type=int, default=0, help="timing test: stop each epoch early")
+    ap.add_argument("--device", default="cpu", help="cpu or cuda")
+    ap.add_argument("--tag", default="", help="suffix for output files, e.g. _c50e20")
     args = ap.parse_args()
     torch.set_num_threads(4)
     torch.manual_seed(args.seed * 100 + args.fold)
@@ -161,7 +163,9 @@ def main():
         for k in ("train_loader", "val_loader"):
             dl = pert_data.dataloader[k]
             pert_data.dataloader[k] = [bt for i, bt in zip(range(args.max_batches), dl)]
-    model = GEARS(pert_data, device="cpu")
+    if args.device.startswith("cuda") and not torch.cuda.is_available():
+        raise SystemExit("CUDA requested but torch.cuda.is_available() is False")
+    model = GEARS(pert_data, device=args.device)
     model.model_initialize(hidden_size=64)
     t1 = time.time()
     model.train(epochs=args.epochs, lr=1e-3)
@@ -185,7 +189,7 @@ def main():
             rows.append({"model": nm, "pert": g, "fold": args.fold, **{k: float(ev[k][i]) for k in KEYS}})
     res_dir = ensure_dir(os.path.join(ROOT, "results", DS + ("" if args.seed == 0 else f"_seed{args.seed}")))
     out = pd.DataFrame(rows)
-    out.to_csv(os.path.join(res_dir, f"gears_fold{args.fold}_seed{args.seed}.csv"), index=False)
+    out.to_csv(os.path.join(res_dir, f"gears_fold{args.fold}_seed{args.seed}{args.tag}.csv"), index=False)
 
     ours = pd.read_csv(os.path.join(res_dir, "per_perturbation_metrics.csv"))
     ours = ours[ours.pert.isin(test_genes)]
@@ -194,7 +198,7 @@ def main():
     tab = allm[allm.model.isin(show)].groupby("model")[KEYS].mean().loc[show]
     lines = [f"## GEARS（已发表方法）与本项目模型对比：第 {args.fold} 折，{len(test_genes)} 个未见基因", "",
              f"GEARS 设置：每个扰动 {args.cells_per_pert} 个细胞 + {args.n_ctrl} 个对照细胞，{args.epochs} 个 epoch，其余为默认参数；"
-             f"训练用时 {t_train / 60:.0f} 分钟（4 核 CPU）。", "",
+             f"训练用时 {t_train / 60:.0f} 分钟（{args.device}）。", "",
              "| 模型 | " + " | ".join(KEYS) + " |", "|---" * (len(KEYS) + 1) + "|"]
     for mdl, r in tab.iterrows():
         lines.append(f"| {mdl} | " + " | ".join(f"{r[k]:.3f}" for k in KEYS) + " |")
@@ -202,7 +206,7 @@ def main():
     gk = allm[allm.model == "GEARS+KD"].set_index("pert").loc[pf.index]
     lines += ["", "PerturbFormer+KD 减去 GEARS+KD（配对 Wilcoxon）：" + "；".join(
         f"{k} {pf[k].mean() - gk[k].mean():+.3f} (p={wilcoxon(pf[k], gk[k]).pvalue:.0e})" for k in KEYS)]
-    with open(os.path.join(res_dir, "gears_summary.md"), "w") as fh:
+    with open(os.path.join(res_dir, f"gears_summary{args.tag}.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
     print("\n".join(lines))
     print(f"total {time.time() - t0:.0f}s")

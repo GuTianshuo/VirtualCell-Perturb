@@ -1,0 +1,8 @@
+setting,model,pearson_all,pearson_de20,pearson_sys,dir_acc_de20,de_overlap20,rank
+original 15 cells / 10 ep,GEARS,0.375,0.541,0.232,0.693,0.108,0.34
+original 15 cells / 10 ep,GEARS+KD,0.387,0.608,0.249,0.702,0.124,0.321
+fair 30 cells / 20 ep,GEARS,0.347,0.499,0.209,0.666,0.096,0.39
+fair 30 cells / 20 ep,GEARS+KD,0.36,0.564,0.227,0.675,0.113,0.369
+fair 50 cells / 20 ep,GEARS,0.357,0.48,0.213,0.656,0.112,0.385
+fair 50 cells / 20 ep,GEARS+KD,0.37,0.55,0.231,0.665,0.129,0.365
+same fold,PerturbFormer+KD,0.597,0.77,0.504,0.849,0.311,0.155

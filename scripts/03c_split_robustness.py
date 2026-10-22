@@ -11,6 +11,7 @@ import sys
 import numpy as np
 import pandas as pd
 from scipy.stats import wilcoxon
+from statsmodels.stats.multitest import multipletests
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from vcp.pipeline import ROOT  # noqa: E402
@@ -47,7 +48,9 @@ def main():
                                                for k in METRICS) + " |")
     lines += ["", "## PerturbFormer+KD 减去对照模型（每种划分内的配对 Wilcoxon）", "",
               "| 对照 | 划分 | " + " | ".join(NAMES[k] for k in METRICS) + " |", "|---" * (len(METRICS) + 2) + "|"]
+    holm_lines = []
     for other in ["kNN-concat+KD", "Linear-concat+KD", "PerturbNet-attn+KD"]:
+        pvals, effects = [], []
         for sd, m in per.items():
             cells = []
             for k in METRICS:
@@ -55,9 +58,18 @@ def main():
                 d = q[MAIN].mean() - q[other].mean()
                 pv = wilcoxon(q[MAIN], q[other]).pvalue if (q[MAIN] != q[other]).any() else 1.0
                 cells.append(f"{d:+.3f} (p={pv:.0e})")
+                pvals.append(pv)
+                effects.append(-d if k == "rank" else d)
             lines.append(f"| {other} | {sd} | " + " | ".join(cells) + " |")
+        adj = multipletests(pvals, method="holm")[1]
+        effects = np.asarray(effects)
+        better = int(((adj < 0.05) & (effects > 0)).sum())
+        worse = int(((adj < 0.05) & (effects < 0)).sum())
+        holm_lines.append(f"- {other}：Holm 校正后 **{better} 次显著领先、{worse} 次显著落后、"
+                          f"{len(effects) - better - worse} 次无显著差异**（每个对照 18 次比较）。")
+    lines += ["", "**Holm 多重检验校正**"] + holm_lines
     lines.append("\n识别排名越低越好，其差值为负表示 PerturbFormer 更好。")
-    with open(os.path.join(ROOT, "results", DS, "split_robustness.md"), "w") as fh:
+    with open(os.path.join(ROOT, "results", DS, "split_robustness.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
     print("\n".join(lines))
 

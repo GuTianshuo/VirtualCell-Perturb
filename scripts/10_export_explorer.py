@@ -71,17 +71,17 @@ def main():
                  r3(nc["pearson_sys_pred_ceiling"]), None, None])
     med = [r3(np.nanmedian(mm[k])) for k in ("pearson_all", "pearson_de20", "pearson_sys", "dir_acc_de20")]
     data = {"items": items, "bench": rows, "median": med, "sources": src_names}
-    with open(os.path.join(ROOT, "docs", "explorer_template.html")) as fh:
+    with open(os.path.join(ROOT, "docs", "explorer_template.html"), encoding="utf-8") as fh:
         html = fh.read()
     html = html.replace("/*__DATA__*/null", json.dumps(data, ensure_ascii=False, separators=(",", ":")))
     out = os.path.join(ROOT, "docs", "explorer.html")
-    with open(out, "w") as fh:   # standalone document: open it directly in any browser
+    with open(out, "w", encoding="utf-8") as fh:   # standalone document: open it directly in any browser
         fh.write('<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n'
                  '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
                  '<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>\n'
                  + html.replace("<div class=\"wrap\">", "</head>\n<body>\n<div class=\"wrap\">", 1) + "\n</body>\n</html>\n")
     if len(sys.argv) > 1:          # optional: page fragment (no html/head/body) for hosted viewers
-        with open(sys.argv[1], "w") as fh:
+        with open(sys.argv[1], "w", encoding="utf-8") as fh:
             fh.write(html)
     print(f"wrote {out} ({os.path.getsize(out) / 1e6:.2f} MB, {len(items)} perturbations)")
 

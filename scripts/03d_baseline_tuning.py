@@ -15,6 +15,7 @@ import sys
 import numpy as np
 import pandas as pd
 from scipy.stats import wilcoxon
+from statsmodels.stats.multitest import multipletests
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from vcp.baselines import KNNEmbedding, LinearEmbedding, knockdown_fraction, knockdown_rule  # noqa: E402
@@ -98,15 +99,23 @@ def main():
                 summary.append({"split": seed, "baseline": kind, "metric": k, "baseline_value": c[ok].mean(),
                                 "pf_value": a[ok].mean(), "diff": diff, "p": pv})
             lines.append(f"| {kind}（调参后） | {seed} | " + " | ".join(cells) + " |")
-    pd.DataFrame(summary).to_csv(os.path.join(ROOT, "results", DS, "baseline_tuned_vs_pf.csv"), index=False)
     s = pd.DataFrame(summary)
+    s["p_holm"] = np.nan
+    for kind in best:
+        idx = s.baseline == kind
+        s.loc[idx, "p_holm"] = multipletests(s.loc[idx, "p"], method="holm")[1]
+    s.to_csv(os.path.join(ROOT, "results", DS, "baseline_tuned_vs_pf.csv"), index=False)
     for kind in best:
         t = s[s.baseline == kind]
-        better = ((t.p < 0.05) & ((t["diff"] > 0) ^ (t.metric == "rank"))).sum()
-        worse = ((t.p < 0.05) & ((t["diff"] < 0) ^ (t.metric == "rank"))).sum()
-        lines.append(f"\n{kind}（调参后）：{len(t)} 次比较中 PerturbFormer 显著更好 {better} 次，显著更差 {worse} 次，"
-                     f"无显著差异 {len(t) - better - worse} 次。")
-    with open(os.path.join(ROOT, "results", DS, "baseline_tuned_vs_pf.md"), "w") as fh:
+        eff = (t["diff"] > 0) ^ (t.metric == "rank")
+        raw_better = int(((t.p < 0.05) & eff).sum())
+        raw_worse = int(((t.p < 0.05) & ~eff).sum())
+        holm_better = int(((t.p_holm < 0.05) & eff).sum())
+        holm_worse = int(((t.p_holm < 0.05) & ~eff).sum())
+        lines.append(f"\n{kind}（调参后）：{len(t)} 次比较中，未校正 p<0.05 时 PerturbFormer 显著更好 {raw_better} 次、"
+                     f"显著更差 {raw_worse} 次；Holm 校正后显著更好 {holm_better} 次、显著更差 {holm_worse} 次、"
+                     f"无显著差异 {len(t) - holm_better - holm_worse} 次。")
+    with open(os.path.join(ROOT, "results", DS, "baseline_tuned_vs_pf.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines) + "\n")
     print("\n".join(lines[-12:]))
 

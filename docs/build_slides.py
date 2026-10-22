@@ -573,13 +573,14 @@ def build():
     gp_ = os.path.join(RES, "gears_fold0_seed0.csv")
     if os.path.exists(gp_):
         gg_ = pd.read_csv(gp_).groupby("model").pearson_sys.mean()
-        text(s, 9.2, 5.75, 3.6, 1.0, [f"已发表方法 GEARS（第 0 折，受 CPU 限制少量训练）：去偏 Pearson {gg_['GEARS+KD']:.2f}；"
-                                      "3 种划分平均，配对 Wilcoxon"], size=11, color=MUTED, line=1.05)
+        text(s, 9.2, 5.75, 3.6, 1.0, [f"已发表方法 GEARS（第 0 折）：去偏 Pearson {gg_['GEARS+KD']:.2f}；"
+                                      "公平预算重跑（30/50 细胞、20 epoch）仍为 0.23，未改变结论；3 种划分平均，配对 Wilcoxon"],
+             size=11, color=MUTED, line=1.05)
     else:
         text(s, 9.2, 5.85, 3.6, 0.9, ["3 种随机划分平均；配对 Wilcoxon，每种划分 n = 1,092 个未见基因"], size=11, color=MUTED)
     footer(s, n, "完整表格：results/replogle_k562_essential/{main_table, split_robustness, baseline_tuned_vs_pf}.md")
     notes(s, f"主结果是三种划分的平均，基线都做了同等调参。均值平移的去偏 Pearson 为 0，没有扰动特异信息。知识检索的模型明显好于线性和深度基线，PerturbFormer 去偏 Pearson {AV[PF]['pearson_sys']:.3f}，"
-             f"比调参后的线性基线高 {tbd.loc[('Linear', 'pearson_sys')]:.3f}。如实说明：调参后的 kNN 在相关性上和它持平，PerturbFormer 稳定更好的是 DEG 方向、重合度和可识别性。已发表的 GEARS 明显更差，但它训练不足，只作参考。")
+             f"比调参后的线性基线高 {tbd.loc[('Linear', 'pearson_sys')]:.3f}。如实说明：调参后的 kNN 在相关性上和它持平，PerturbFormer 稳定更好的是 DEG 方向、重合度和可识别性。已发表的 GEARS 明显更差；公平预算重跑（30/50 细胞、20 epoch）也没有改变结论。")
 
     # 8 ---------------------------------------------------------------- priors & ablation (native charts)
     s = new()

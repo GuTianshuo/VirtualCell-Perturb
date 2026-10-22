@@ -33,17 +33,23 @@ def model_color(name: str) -> str:
     return INK2
 
 
+CJK_FONTS = ["Noto Sans CJK SC", "Microsoft YaHei", "SimHei", "PingFang SC", "Source Han Sans SC"]
+
+
 def setup():
-    cjk = [f.name for f in font_manager.fontManager.ttflist if "Noto Sans CJK SC" in f.name]
-    if not cjk:
-        for path in ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",):
+    available = {f.name for f in font_manager.fontManager.ttflist}
+    if not any(name in available for name in CJK_FONTS):
+        for path in ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                     "C:/Windows/Fonts/msyh.ttc",
+                     "C:/Windows/Fonts/simhei.ttf",
+                     "/System/Library/Fonts/PingFang.ttc"):
             try:
                 font_manager.fontManager.addfont(path)
             except Exception:
                 pass
     plt.rcParams.update({
         "font.family": "sans-serif",
-        "font.sans-serif": ["Noto Sans CJK SC", "DejaVu Sans", "Arial"],
+        "font.sans-serif": CJK_FONTS + ["DejaVu Sans", "Arial"],
         "axes.unicode_minus": False,
         "font.size": 10,
         "axes.titlesize": 11,

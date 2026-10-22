@@ -1,11 +1,15 @@
 # data & large artefacts (re-created by scripts/00_download_data.sh and the pipeline)
 data/
-models/
 results/**/*.npz
 results/**/*.pt
-results/predictions/
 *.h5ad
+# the trained deployable model (models/k562/) and the small prediction examples
+# (report.md / pseudobulk csv / png) are kept in the repository on purpose.
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 .DS_Store
+._*
+
+# raw GEARS rerun logs (kept locally; results are in results/replogle_k562_essential/)
+results/logs/12_gears_*.log

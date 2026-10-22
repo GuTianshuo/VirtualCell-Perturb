@@ -1,0 +1,23 @@
+{
+  "dataset": "replogle_k562_essential",
+  "n_ens": 3,
+  "basis_k": 32,
+  "dims": {
+    "go": 128,
+    "ppi": 128,
+    "genept": 128,
+    "resp": 64
+  },
+  "former_kwargs": {
+    "d_model": 128,
+    "n_heads": 2,
+    "topk": 20,
+    "fusion": "attn",
+    "dropout": 0.1
+  },
+  "flow_kwargs": {
+    "hidden": 256,
+    "n_blocks": 3,
+    "sigma": 0.05
+  }
+}

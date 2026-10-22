@@ -1,0 +1,17 @@
+{
+ "definition": "max cosine similarity of concatenated GO/PPI/GenePT embeddings to any measured perturbation",
+ "edges": [
+  0.6958646178245544,
+  0.852044681708018
+ ],
+ "mean_pearson_sys": [
+  0.32005027097315697,
+  0.47162142277357155,
+  0.6471725494804239
+ ],
+ "mean_pearson_de20": [
+  0.6106900196033722,
+  0.7475250375725023,
+  0.8785302268013686
+ ]
+}

@@ -47,7 +47,14 @@ def main():
     tmp.write_text(html, encoding="utf-8")
     try:
         with sync_playwright() as p:
-            b = p.chromium.launch()
+            try:
+                b = p.chromium.launch()
+            except Exception:
+                # no bundled Chromium: use an installed Chrome/Edge (common on Windows)
+                try:
+                    b = p.chromium.launch(channel="chrome")
+                except Exception:
+                    b = p.chromium.launch(channel="msedge")
             pg = b.new_page()
             pg.goto(tmp.as_uri(), wait_until="load")
             pg.evaluate("""() => renderMathInElement(document.body, {delimiters: [

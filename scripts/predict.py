@@ -68,7 +68,7 @@ def main():
     print(rep)
 
     od = ensure_dir(args.out or os.path.join(ROOT, "results", "predictions", args.gene))
-    with open(os.path.join(od, "report.md"), "w") as fh:
+    with open(os.path.join(od, "report.md"), "w", encoding="utf-8") as fh:
         fh.write(rep + "\n")
     df = pd.DataFrame({"gene": vc.genes, "control_mean": vc.m["ctrl_mean"],
                        "predicted_mean": vc.m["ctrl_mean"] + out["delta"], "predicted_delta": out["delta"]})
